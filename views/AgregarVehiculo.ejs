@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        <%= title || 'Agregar Vehículo' %>
+    </title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="/css/Index.css">
+
+    <!-- Estilos adicionales para vehículos -->
+    <style>
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 4px solid #0d6efd;
+        }
+
+        .section-title {
+            color: #0d6efd;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .input-group-with-icon {
+            position: relative;
+        }
+
+        .input-group-with-icon .bi {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 1.2rem;
+        }
+
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            margin-left: 10px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .patente-input {
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .year-input {
+            max-width: 150px;
+        }
+
+        .required-field::after {
+            content: " *";
+            color: #dc3545;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-car-front-fill me-2"></i>Gestión Vehicular
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarVehicular">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarVehicular">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Inicio</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/personas">Personas</a>
+                    </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" id="navbarDropdownVehiculos" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-truck me-1"></i>Vehículos
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdownVehiculos">
+                            <li><a class="dropdown-item" href="/vehiculos/agregar">
+                                    <i class="bi bi-plus-circle me-2"></i>Agregar Vehículo
+                                </a></li>
+                            <li><a class="dropdown-item" href="/vehiculos">
+                                    <i class="bi bi-list-ul me-2"></i>Listar Vehículos
+                                </a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/documentos">Documentos</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reportes">Reportes</a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow">
+                    <div class="card-header py-3 bg-primary-custom text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-plus-circle me-2"></i>Agregar Nuevo Vehículo
+                        </h4>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- Mensajes -->
+                        <% if (success) { %>
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="bi bi-check-circle me-2"></i>
+                                <%= success %>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            <% } %>
+
+                                <% if (error) { %>
+                                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <%= error %>
+                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                    <% } %>
+
+                                        <% if (tiposVehiculo && tiposVehiculo.length===0) { %>
+                                            <div class="alert alert-warning alert-dismissible fade show">
+                                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                                <strong>Atención:</strong> No se encontraron tipos de vehículo
+                                                configurados.
+                                                <button type="button" class="btn-close"
+                                                    data-bs-dismiss="alert"></button>
+                                            </div>
+                                            <% } %>
+
+                                                <!-- Formulario -->
+                                                <form method="POST" action="/vehiculos/agregar"
+                                                    id="formAgregarVehiculo">
+                                                    <div class="row">
+                                                        <!-- Sección: Información del Cliente -->
+                                                        <div class="form-section">
+                                                            <h5 class="section-title">
+                                                                <i class="bi bi-person-badge me-2"></i>Información del
+                                                                Cliente
+                                                            </h5>
+                                                            <div class="row">
+                                                                <div class="col-md-6 mb-3">
+                                                                    <label for="id_cliente"
+                                                                        class="form-label required-field">Cliente</label>
+                                                                    <select class="form-select" id="id_cliente"
+                                                                        name="id_cliente" required>
+                                                                        <option value="">Seleccionar cliente...</option>
+                                                                        <% if (clientes && clientes.length> 0) { %>
+                                                                            <% clientes.forEach(cliente=> { %>
+                                                                                <option
+                                                                                    value="<%= cliente.id_cliente %>"
+                                                                                    <%=(datosFormulario &&
+                                                                                    datosFormulario.id_cliente==cliente.id_cliente)
+                                                                                    ? 'selected' : '' %>>
+                                                                                    <%= cliente.nombre_cliente %>
+                                                                                </option>
+                                                                                <% }); %>
+                                                                                    <% } else { %>
+                                                                                        <option value="0">-- NO HAY
+                                                                                            CLIENTES DISPONIBLES --
+                                                                                        </option>
+                                                                                        <% } %>
+                                                                    </select>
+                                                                    <div class="form-text">
+                                                                        <i class="bi bi-info-circle"></i> El cliente
+                                                                        debe estar previamente registrado
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Sección: Datos Principales del Vehículo -->
+                                                        <div class="form-section">
+                                                            <h5 class="section-title">
+                                                                <i class="bi bi-card-checklist me-2"></i>Datos
+                                                                Principales del Vehículo
+                                                            </h5>
+                                                            <div class="row">
+                                                                <!-- Patente -->
+                                                                <div class="col-md-4 mb-3">
+                                                                    <label for="patente"
+                                                                        class="form-label required-field">Patente</label>
+                                                                    <div class="input-group-with-icon">
+                                                                        <input type="text"
+                                                                            class="form-control patente-input"
+                                                                            id="patente" name="patente"
+                                                                            value="<%= datosFormulario ? datosFormulario.patente : '' %>"
+                                                                            placeholder="AB123CD"
+                                                                            pattern="[A-Za-z0-9]{6,7}"
+                                                                            title="Patente chilena (6-7 caracteres alfanuméricos)"
+                                                                            required>
+                                                                        <i class="bi bi-123"></i>
+                                                                    </div>
+                                                                    <div class="form-text">
+                                                                        <small>Formato: 6 o 7 caracteres
+                                                                            alfanuméricos</small>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Tipo de Vehículo -->
+                                                                <div class="col-md-4 mb-3">
+                                                                    <label for="tipo_vehiculo"
+                                                                        class="form-label required-field">Tipo de
+                                                                        Vehículo</label>
+                                                                    <select
+                                                                        class="form-select <%= (tiposVehiculo && tiposVehiculo.length === 0) ? 'border-warning' : '' %>"
+                                                                        id="tipo_vehiculo" name="tipo_vehiculo"
+                                                                        required>
+                                                                        <option value="">Seleccionar tipo...</option>
+                                                                        <% if (tiposVehiculo && tiposVehiculo.length> 0)
+                                                                            { %>
+                                                                            <% tiposVehiculo.forEach(tipo=> { %>
+                                                                                <option
+                                                                                    value="<%= tipo.id_tipo_vehiculo %>"
+                                                                                    <%=(datosFormulario &&
+                                                                                    datosFormulario.tipo_vehiculo==tipo.id_tipo_vehiculo)
+                                                                                    ? 'selected' : '' %>>
+                                                                                    <%= tipo.nombre_tipo %>
+                                                                                </option>
+                                                                                <% }); %>
+                                                                                    <% } else { %>
+                                                                                        <option value="">-- SIN TIPOS
+                                                                                            DISPONIBLES --</option>
+                                                                                        <% } %>
+                                                                    </select>
+                                                                    <% if (tiposVehiculo && tiposVehiculo.length===0) {
+                                                                        %>
+                                                                        <div class="form-text text-warning">
+                                                                            <i class="bi bi-info-circle me-1"></i>
+                                                                            Contacte al administrador para configurar
+                                                                            tipos de vehículo
+                                                                        </div>
+                                                                        <% } %>
+                                                                </div>
+
+                                                                <!-- Capacidad -->
+                                                                <div class="col-md-4 mb-3">
+                                                                    <label for="capacidad"
+                                                                        class="form-label required-field">Capacidad</label>
+                                                                    <div class="input-group-with-icon">
+                                                                        <input type="text" class="form-control"
+                                                                            id="capacidad" name="capacidad"
+                                                                            value="<%= datosFormulario ? datosFormulario.capacidad : '' %>"
+                                                                            placeholder="Ej: 5 personas, 1000kg"
+                                                                            required>
+                                                                        <i class="bi bi-box"></i>
+                                                                    </div>
+                                                                    <div class="form-text">
+                                                                        <small>Ej: "5 pasajeros", "2 toneladas", "30
+                                                                            m³"</small>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Sección: Información Técnica -->
+                                                        <div class="form-section">
+                                                            <h5 class="section-title">
+                                                                <i class="bi bi-gear me-2"></i>Información Técnica
+                                                            </h5>
+                                                            <div class="row">
+                                                                <!-- Marca -->
+                                                                <div class="col-md-4 mb-3">
+                                                                    <label for="marca"
+                                                                        class="form-label required-field">Marca</label>
+                                                                    <div class="input-group-with-icon">
+                                                                        <input type="text" class="form-control"
+                                                                            id="marca" name="marca"
+                                                                            value="<%= datosFormulario ? datosFormulario.marca : '' %>"
+                                                                            placeholder="Toyota, Ford, Chevrolet..."
+                                                                            required>
+                                                                        <i class="bi bi-tag"></i>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Modelo -->
+                                                                <div class="col-md-4 mb-3">
+                                                                    <label for="modelo"
+                                                                        class="form-label required-field">Modelo</label>
+                                                                    <div class="input-group-with-icon">
+                                                                        <input type="text" class="form-control"
+                                                                            id="modelo" name="modelo"
+                                                                            value="<%= datosFormulario ? datosFormulario.modelo : '' %>"
+                                                                            placeholder="Corolla, Ranger, Spark..."
+                                                                            required>
+                                                                        <i class="bi bi-car-front"></i>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Año -->
+                                                                <div class="col-md-4 mb-3">
+                                                                    <label for="anio"
+                                                                        class="form-label required-field">Año</label>
+                                                                    <div class="input-group-with-icon">
+                                                                        <input type="number"
+                                                                            class="form-control year-input" id="anio"
+                                                                            name="anio"
+                                                                            value="<%= datosFormulario ? datosFormulario.anio : '' %>"
+                                                                            min="1900"
+                                                                            max="<%= new Date().getFullYear() + 1 %>"
+                                                                            placeholder="2024" required>
+                                                                        <i class="bi bi-calendar"></i>
+                                                                    </div>
+                                                                    <div class="form-text">
+                                                                        <small>Entre 1900 y <%= new Date().getFullYear()
+                                                                                + 1 %></small>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Número de Chasis -->
+                                                                <div class="col-md-6 mb-3">
+                                                                    <label for="numero_chasis" class="form-label">Número
+                                                                        de Chasis (VIN)</label>
+                                                                    <div class="input-group-with-icon">
+                                                                        <input type="text" class="form-control"
+                                                                            id="numero_chasis" name="numero_chasis"
+                                                                            value="<%= datosFormulario ? datosFormulario.numero_chasis : '' %>"
+                                                                            placeholder="17 dígitos alfanuméricos (opcional)">
+                                                                        <i class="bi bi-upc-scan"></i>
+                                                                    </div>
+                                                                    <div class="form-text">
+                                                                        <small>Número de identificación del
+                                                                            vehículo</small>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Número de Motor -->
+                                                                <div class="col-md-6 mb-3">
+                                                                    <label for="numero_motor" class="form-label">Número
+                                                                        de Motor</label>
+                                                                    <div class="input-group-with-icon">
+                                                                        <input type="text" class="form-control"
+                                                                            id="numero_motor" name="numero_motor"
+                                                                            value="<%= datosFormulario ? datosFormulario.numero_motor : '' %>"
+                                                                            placeholder="Número de motor (opcional)">
+                                                                        <i class="bi bi-engine"></i>
+                                                                    </div>
+                                                                    <div class="form-text">
+                                                                        <small>Número de serie del motor</small>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Sección: Apariencia -->
+                                                        <div class="form-section">
+                                                            <h5 class="section-title">
+                                                                <i class="bi bi-palette me-2"></i>Apariencia
+                                                            </h5>
+                                                            <div class="row">
+                                                                <!-- Color -->
+                                                                <div class="col-md-6 mb-3">
+                                                                    <label for="color"
+                                                                        class="form-label required-field">Color</label>
+                                                                    <div class="d-flex align-items-center">
+                                                                        <input type="text" class="form-control"
+                                                                            id="color" name="color"
+                                                                            value="<%= datosFormulario ? datosFormulario.color : '' %>"
+                                                                            placeholder="Rojo, Azul, Negro..." required>
+                                                                        <div class="color-preview" id="colorPreview">
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="form-text">
+                                                                        <small>Puede ser nombre o código hexadecimal
+                                                                            (#FF0000)</small>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Estado Activo -->
+                                                                <div class="col-md-6 mb-3 d-flex align-items-end">
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                            id="activo" name="activo" value="1"
+                                                                            <%=(!datosFormulario ||
+                                                                            datosFormulario.activo=='1' ) ? 'checked'
+                                                                            : '' %>>
+                                                                        <label class="form-check-label" for="activo">
+                                                                            <i
+                                                                                class="bi bi-check-circle me-1"></i>Vehículo
+                                                                            activo
+                                                                        </label>
+                                                                        <div class="form-text">
+                                                                            <small>Si está desactivado, no aparecerá en
+                                                                                las listas principales</small>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Botones -->
+                                                    <div class="d-flex justify-content-between mt-4">
+                                                        <a href="/" class="btn btn-secondary">
+                                                            <i class="bi bi-arrow-left me-2"></i>Volver al Inicio
+                                                        </a>
+                                                        <div>
+                                                            <button type="reset" class="btn btn-warning me-2">
+                                                                <i class="bi bi-arrow-clockwise me-2"></i>Limpiar
+                                                            </button>
+                                                            <button type="submit" class="btn btn-primary-custom"
+                                                                id="btnSubmit">
+                                                                <i class="bi bi-save me-2"></i>Guardar Vehículo
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                    </div>
+                </div>
+
+                <!-- Información de ayuda -->
+                <div class="card mt-3 border-info">
+                    <div class="card-body">
+                        <h6 class="card-title text-info">
+                            <i class="bi bi-info-circle me-2"></i>Información importante
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li><strong>Campos obligatorios:</strong> Cliente, Patente, Tipo de Vehículo, Capacidad,
+                                Marca, Modelo, Año y Color</li>
+                            <li><strong>Cliente:</strong> Debe estar previamente registrado en el sistema</li>
+                            <li><strong>Patente:</strong> 6 o 7 caracteres alfanuméricos (sin guiones ni espacios)</li>
+                            <li><strong>Año:</strong> Debe ser un año válido entre 1900 y el año actual + 1</li>
+                            <li><strong>Duplicados:</strong> No se permiten patentes duplicadas para el mismo cliente
+                            </li>
+                            <li><strong>VIN/Chasis:</strong> 17 caracteres alfanuméricos (excepto I, O, Q)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-primary-custom text-center text-white mt-5 py-4">
+        <div class="container">
+            <p class="mb-1">
+                &copy; <%= new Date().getFullYear() %> Sistema de Gestión Vehicular
+            </p>
+            <small>Control • Seguridad • Reportes</small>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Elementos del DOM
+            const patenteInput = document.getElementById('patente');
+            const colorInput = document.getElementById('color');
+            const colorPreview = document.getElementById('colorPreview');
+            const yearInput = document.getElementById('anio');
+            const form = document.getElementById('formAgregarVehiculo');
+            const btnSubmit = document.getElementById('btnSubmit');
+
+            // 1. Convertir patente a mayúsculas
+            if (patenteInput) {
+                patenteInput.addEventListener('input', function () {
+                    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                });
+            }
+
+            // 2. Previsualización de color
+            if (colorInput && colorPreview) {
+                const colorMap = {
+                    'rojo': '#ff0000', 'azul': '#0000ff', 'verde': '#008000',
+                    'amarillo': '#ffff00', 'negro': '#000000', 'blanco': '#ffffff',
+                    'gris': '#808080', 'plata': '#c0c0c0', 'oro': '#ffd700',
+                    'naranja': '#ffa500', 'morado': '#800080', 'rosado': '#ffc0cb',
+                    'celeste': '#87ceeb', 'café': '#8b4513', 'beige': '#f5f5dc',
+                    'turquesa': '#40e0d0', 'violeta': '#ee82ee', 'verde oscuro': '#006400',
+                    'azul marino': '#000080', 'rojo oscuro': '#8b0000'
+                };
+
+                colorInput.addEventListener('input', function () {
+                    let colorValue = this.value.toLowerCase().trim();
+
+                    if (!colorValue.startsWith('#') && colorMap[colorValue]) {
+                        colorValue = colorMap[colorValue];
+                    }
+
+                    colorPreview.style.backgroundColor = colorValue;
+                });
+
+                // Color inicial
+                colorPreview.style.backgroundColor = colorInput.value ?
+                    (colorInput.value.startsWith('#') ? colorInput.value :
+                        colorMap[colorInput.value.toLowerCase()] || colorInput.value) : '#cccccc';
+            }
+
+            // 3. Validación del año
+            if (yearInput) {
+                const currentYear = new Date().getFullYear();
+                const maxYear = currentYear + 1;
+
+                yearInput.setAttribute('max', maxYear);
+                yearInput.addEventListener('input', function () {
+                    if (this.value < 1900) this.value = 1900;
+                    if (this.value > maxYear) this.value = maxYear;
+                });
+            }
+
+            // 4. Validación del formulario
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    // Deshabilitar botón
+                    if (btnSubmit) {
+                        btnSubmit.disabled = true;
+                        btnSubmit.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Procesando...';
+                    }
+
+                    // Obtener valores
+                    const patente = patenteInput ? patenteInput.value.trim() : '';
+                    const marca = document.getElementById('marca') ? document.getElementById('marca').value.trim() : '';
+                    const modelo = document.getElementById('modelo') ? document.getElementById('modelo').value.trim() : '';
+                    const anio = yearInput ? yearInput.value.trim() : '';
+                    const color = colorInput ? colorInput.value.trim() : '';
+                    const capacidad = document.getElementById('capacidad') ? document.getElementById('capacidad').value.trim() : '';
+                    const tipoVehiculo = document.getElementById('tipo_vehiculo') ? document.getElementById('tipo_vehiculo').value : '';
+                    const clienteSelect = document.getElementById('id_cliente');
+                    const clienteId = clienteSelect ? clienteSelect.value : '';
+
+                    let errores = [];
+
+                    // Validaciones
+                    if (!/^[A-Z0-9]{6,7}$/.test(patente)) {
+                        errores.push('La patente debe tener 6 o 7 caracteres alfanuméricos (sin guiones ni espacios)');
+                    }
+
+                    if (marca.length < 2) {
+                        errores.push('La marca debe tener al menos 2 caracteres');
+                    }
+
+                    if (modelo.length < 2) {
+                        errores.push('El modelo debe tener al menos 2 caracteres');
+                    }
+
+                    const currentYear = new Date().getFullYear();
+                    if (!anio || anio < 1900 || anio > currentYear + 1) {
+                        errores.push(`El año debe estar entre 1900 y ${currentYear + 1}`);
+                    }
+
+                    if (color.length < 2) {
+                        errores.push('El color debe tener al menos 2 caracteres');
+                    }
+
+                    if (capacidad.length < 1) {
+                        errores.push('La capacidad es requerida');
+                    }
+
+                    if (!tipoVehiculo) {
+                        errores.push('Debe seleccionar un tipo de vehículo');
+                    }
+
+                    if (!clienteId || clienteId === '0') {
+                        errores.push('Debe seleccionar un cliente válido');
+                    }
+
+                    // Si hay errores
+                    if (errores.length > 0) {
+                        e.preventDefault();
+                        alert('Por favor corrija los siguientes errores:\n\n• ' + errores.join('\n• '));
+
+                        if (btnSubmit) {
+                            btnSubmit.disabled = false;
+                            btnSubmit.innerHTML = '<i class="bi bi-save me-2"></i>Guardar Vehículo';
+                        }
+                        return false;
+                    }
+
+                    return true;
+                });
+            }
+
+            // 5. Focus inicial
+            if (patenteInput && !patenteInput.value.trim()) {
+                patenteInput.focus();
+            }
+        });
+    </script>
+</body>
+
+</html>

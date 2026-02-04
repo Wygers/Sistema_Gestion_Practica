@@ -1,0 +1,98 @@
+/* Colores personalizados */
+.text-brown {
+  color: #5e3200 !important;
+}
+
+.bg-brown {
+  background-color: #f8e5b5 !important;
+  /* Amarillo claro */
+}
+
+.bg-yellow-strong {
+  background-color: #f7b733 !important;
+  /* Amarillo fuerte */
+}
+
+.text-white {
+  color: white !important;
+}
+
+/* Body y estructura general */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #fffaf1;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* El contenido principal se expande para empujar el footer */
+main {
+  flex: 1;
+}
+
+/* Títulos */
+h1,
+h2,
+h3 {
+  color: #5e3200;
+}
+
+/* Navbar */
+.navbar {
+  background-color: #f7b733 !important;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  color: #5e3200 !important;
+}
+
+.navbar-nav .nav-link {
+  font-weight: 500;
+  color: #5e3200 !important;
+}
+
+.navbar-nav .nav-link.active {
+  font-weight: bold;
+  color: #5e3200 !important;
+}
+
+/* Tabla */
+.table {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.table thead {
+  background-color: #5e3200;
+  color: white;
+}
+
+.table tbody tr:hover {
+  background-color: #fff0d9;
+}
+
+/* Botones */
+.btn-danger {
+  background-color: #c0392b;
+  border: none;
+}
+
+.btn-danger:hover {
+  background-color: #a93226;
+}
+
+/* Footer */
+footer {
+  background-color: #5e3200 !important;
+  color: white !important;
+  text-align: center;
+  padding: 1rem 0;
+  font-size: 0.95rem;
+  border-top: 1px solid #ddd;
+  margin-top: auto;
+}
