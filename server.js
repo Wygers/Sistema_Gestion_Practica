@@ -15,7 +15,7 @@ const db = require('./db/conexion');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configuración de sesión
+// Configuración de sesión (para flash messages)
 app.use(session({
     secret: process.env.SESSION_SECRET || 'mi_secreto_vehicular',
     resave: false,
@@ -41,7 +41,57 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Rutas
+// IMPORTANTE: Primero verifica que los archivos de rutas existan
+try {
+    // Rutas de vehículos
+    const vehiculosRoutes = require('./routes/vehiculos.routes');
+    app.use('/vehiculos', vehiculosRoutes);
+    console.log('✓ Rutas de vehículos cargadas');
+} catch (error) {
+    console.error('✗ Error al cargar rutas de vehículos:', error.message);
+    // Crear ruta básica si el archivo no existe
+    app.use('/vehiculos', (req, res) => {
+        res.status(404).send('Módulo de vehículos no disponible');
+    });
+}
+
+try {
+    // Rutas de personas
+    const personasRoutes = require('./routes/personas.routes');
+    app.use('/personas', personasRoutes);
+    console.log('✓ Rutas de personas cargadas');
+} catch (error) {
+    console.error('✗ Error al cargar rutas de personas:', error.message);
+    app.use('/personas', (req, res) => {
+        res.status(404).send('Módulo de personas no disponible');
+    });
+}
+
+try {
+    // RUTAS DE DOCUMENTOS
+    const documentosRoutes = require('./routes/documentos.routes');
+    app.use('/documentos', documentosRoutes);
+    console.log('✓ Rutas de documentos cargadas');
+} catch (error) {
+    console.error('✗ Error al cargar rutas de documentos:', error.message);
+    // Ruta temporal de documentos
+    app.use('/documentos', (req, res) => {
+        res.render('Documentos', {
+            title: 'Gestión Documental',
+            fecha: new Date(),
+            totalDocumentos: 0,
+            documentosVigentes: 0,
+            documentosPorVencer: 0,
+            documentosVencidos: 0,
+            documentosProximos: [],
+            documentos: [],
+            vehiculos: [],
+            tiposDocumentos: []
+        });
+    });
+}
+
+// Ruta principal
 app.get('/', async (req, res) => {
     try {
         const [rows] = await db.query('SELECT NOW() AS fecha');
@@ -58,23 +108,11 @@ app.get('/', async (req, res) => {
     }
 });
 
-// Rutas de vehículos
-const vehiculosRoutes = require('./routes/vehiculos.routes');
-app.use('/vehiculos', vehiculosRoutes);
-
-// Rutas de personas
-const personasRoutes = require('./routes/personas.routes');
-app.use('/personas', personasRoutes);
-
-// RUTAS DE DOCUMENTOS
-const documentosRoutes = require('./routes/documentos.routes');
-app.use('/documentos', documentosRoutes);
-
 app.get('/login', (req, res) => {
     res.render('Login', { title: 'Iniciar Sesión' });
 });
 
-// Ruta de prueba
+// Ruta de prueba de base de datos
 app.get('/tst-db', async (req, res) => {
     try {
         const [rows] = await db.query('SELECT 1+1 AS result');
@@ -90,6 +128,43 @@ app.get('/tst-db', async (req, res) => {
     }
 });
 
+// Ruta para documentos simple (por si fallan las rutas)
+app.get('/documentos/simple', async (req, res) => {
+    try {
+        res.render('Documentos', {
+            title: 'Gestión Documental',
+            fecha: new Date(),
+            totalDocumentos: 0,
+            documentosVigentes: 0,
+            documentosPorVencer: 0,
+            documentosVencidos: 0,
+            documentosProximos: [],
+            documentos: [],
+            vehiculos: [],
+            tiposDocumentos: []
+        });
+    } catch (error) {
+        res.status(500).send('Error al cargar documentos');
+    }
+});
+
+// Ruta 404 para manejar errores
+app.use((req, res) => {
+    res.status(404).render('error', {
+        title: 'Página no encontrada',
+        message: 'La página que buscas no existe'
+    });
+});
+
+// Manejo de errores global
+app.use((err, req, res, next) => {
+    console.error('Error global:', err.stack);
+    res.status(500).render('error', {
+        title: 'Error del servidor',
+        message: 'Algo salió mal en el servidor'
+    });
+});
+
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log('='.repeat(50));
@@ -97,12 +172,10 @@ app.listen(PORT, () => {
     console.log('='.repeat(50));
     console.log('   Rutas disponibles:');
     console.log(`   • http://localhost:${PORT}/ (Inicio)`);
-    console.log(`   • http://localhost:${PORT}/personas/agregar (Agregar Persona)`);
-    console.log(`   • http://localhost:${PORT}/personas (Listar Personas)`);
-    console.log(`   • http://localhost:${PORT}/vehiculos/agregar (Agregar Vehículo)`);
-    console.log(`   • http://localhost:${PORT}/vehiculos (Listar Vehículos)`);
-    console.log(`   • http://localhost:${PORT}/documentos (Gestión Documental)`);
-    console.log(`   • http://localhost:${PORT}/documentos/vehiculos (Documentos Vehículos)`);
+    console.log(`   • http://localhost:${PORT}/personas (Personas)`);
+    console.log(`   • http://localhost:${PORT}/vehiculos (Vehículos)`);
+    console.log(`   • http://localhost:${PORT}/documentos (Documentos)`);
+    console.log(`   • http://localhost:${PORT}/documentos/simple (Documentos Simple)`);
     console.log(`   • http://localhost:${PORT}/login (Login)`);
     console.log(`   • http://localhost:${PORT}/tst-db (Test DB)`);
     console.log('='.repeat(50));
