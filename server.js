@@ -1,3 +1,4 @@
+// app.js (o index.js)
 require('dotenv').config();
 
 const express = require('express');
@@ -41,6 +42,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+
 // IMPORTANTE: Primero verifica que los archivos de rutas existan
 try {
     // Rutas de vehículos
@@ -76,7 +78,7 @@ try {
     console.error('✗ Error al cargar rutas de documentos:', error.message);
     // Ruta temporal de documentos
     app.use('/documentos', (req, res) => {
-        res.render('Documentos', {
+        res.render('documentos', {
             title: 'Gestión Documental',
             fecha: new Date(),
             totalDocumentos: 0,
@@ -90,6 +92,102 @@ try {
         });
     });
 }
+
+// RUTA API PARA OBTENER VEHÍCULOS (AGREGADA AQUÍ)
+app.get('/api/vehiculos', async (req, res) => {
+    try {
+        const [vehiculos] = await db.query(`
+            SELECT 
+                v.id_vehiculo,
+                v.patente,
+                v.marca,
+                v.modelo,
+                v.anio,
+                v.color,
+                c.nombre_cliente
+            FROM vehiculos v
+            LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
+            WHERE v.activo = 1
+            ORDER BY v.patente ASC
+        `);
+
+        res.json({
+            success: true,
+            vehiculos: vehiculos
+        });
+    } catch (error) {
+        console.error('Error al obtener vehículos API:', error);
+        res.json({
+            success: false,
+            error: 'Error al cargar vehículos',
+            message: error.message
+        });
+    }
+});
+
+// También puedes agregar esta ruta dentro de documentos si prefieres
+app.get('/documentos/api/vehiculos', async (req, res) => {
+    try {
+        const [vehiculos] = await db.query(`
+            SELECT 
+                v.id_vehiculo,
+                v.patente,
+                v.marca,
+                v.modelo,
+                v.anio,
+                v.color,
+                c.nombre_cliente
+            FROM vehiculos v
+            LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
+            WHERE v.activo = 1
+            ORDER BY v.patente ASC
+        `);
+
+        res.json({
+            success: true,
+            vehiculos: vehiculos
+        });
+    } catch (error) {
+        console.error('Error al obtener vehículos API:', error);
+        res.json({
+            success: false,
+            error: 'Error al cargar vehículos',
+            message: error.message
+        });
+    }
+});
+
+// Agrega esto después de las otras rutas en app.js
+app.get('/api/vehiculos', async (req, res) => {
+    try {
+        const [vehiculos] = await db.query(`
+            SELECT 
+                v.id_vehiculo,
+                v.patente,
+                v.marca,
+                v.modelo,
+                v.anio,
+                v.color,
+                c.nombre_cliente
+            FROM vehiculos v
+            LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
+            WHERE v.activo = 1
+            ORDER BY v.patente ASC
+        `);
+
+        res.json({
+            success: true,
+            vehiculos: vehiculos
+        });
+    } catch (error) {
+        console.error('Error en API /api/vehiculos:', error);
+        res.json({
+            success: false,
+            error: 'Error al cargar vehículos',
+            message: error.message
+        });
+    }
+});
 
 // Ruta principal
 app.get('/', async (req, res) => {
@@ -131,7 +229,7 @@ app.get('/tst-db', async (req, res) => {
 // Ruta para documentos simple (por si fallan las rutas)
 app.get('/documentos/simple', async (req, res) => {
     try {
-        res.render('Documentos', {
+        res.render('documentos', {
             title: 'Gestión Documental',
             fecha: new Date(),
             totalDocumentos: 0,
@@ -178,5 +276,7 @@ app.listen(PORT, () => {
     console.log(`   • http://localhost:${PORT}/documentos/simple (Documentos Simple)`);
     console.log(`   • http://localhost:${PORT}/login (Login)`);
     console.log(`   • http://localhost:${PORT}/tst-db (Test DB)`);
+    console.log(`   • http://localhost:${PORT}/api/vehiculos (API Vehículos)`);
+    console.log(`   • http://localhost:${PORT}/documentos/api/vehiculos (API Vehículos Docs)`);
     console.log('='.repeat(50));
 });

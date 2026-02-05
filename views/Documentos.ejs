@@ -1,23 +1,22 @@
 <!DOCTYPE html>
 <html lang="es">
 
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>
         <%= title || 'Gestión Documental' %>
     </title>
-
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-
     <!-- CSS Personalizado -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
+
     <style>
         :root {
             --primary-custom: #0d6efd;
@@ -189,10 +188,59 @@
             border-radius: 5px;
             margin: 10px 0;
         }
+
+        /* Nuevos estilos para depuración */
+        .debug-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 9999;
+            max-width: 300px;
+            display: none;
+        }
+
+        .debug-toggle {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10000;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #ffc107;
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
+    <!-- Botón de toggle para depuración -->
+    <div class="debug-toggle" id="debugToggle" title="Mostrar información de depuración">
+        <i class="bi bi-bug"></i>
+    </div>
+
+    <!-- Panel de depuración -->
+    <div class="debug-panel card shadow-lg" id="debugPanel">
+        <div class="card-header bg-warning text-dark">
+            <h6 class="mb-0"><i class="bi bi-bug-fill me-2"></i>Información de Depuración</h6>
+        </div>
+        <div class="card-body p-2">
+            <small>
+                <strong>Vehículos disponibles:</strong> <span id="debugVehiculosCount">0</span><br>
+                <strong>Tipos de documentos:</strong> <span id="debugTiposCount">0</span><br>
+                <strong>Documentos totales:</strong> <span id="debugDocumentosCount">0</span><br>
+                <hr class="my-1">
+                <strong>Último vehículo:</strong><br>
+                <span id="debugLastVehiculo">No hay vehículos</span>
+            </small>
+        </div>
+    </div>
+
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom shadow-sm">
         <div class="container">
@@ -388,7 +436,7 @@
                                                             </td>
                                                             <td>
                                                                 <div class="fw-bold">
-                                                                    <%= doc.placa || 'Sin placa' %>
+                                                                    <%= doc.patente || 'Sin patente' %>
                                                                 </div>
                                                                 <small class="text-muted">
                                                                     <%= doc.marca || '' %>
@@ -456,7 +504,6 @@
                                 </div>
                             </div>
                             <% } %>
-
                                 <!-- Documentos Recientes -->
                                 <div class="row">
                                     <div class="col-lg-8">
@@ -501,7 +548,7 @@
                                                                         </td>
                                                                         <td>
                                                                             <div class="fw-bold">
-                                                                                <%= doc.placa || 'Sin asignar' %>
+                                                                                <%= doc.patente || 'Sin asignar' %>
                                                                             </div>
                                                                             <small class="text-muted">
                                                                                 <%= doc.marca || '' %>
@@ -656,6 +703,14 @@
                 <form id="formNuevoDocumento" action="/documentos/vehiculo/registrar" method="POST"
                     enctype="multipart/form-data">
                     <div class="modal-body">
+                        <!-- DEBUG: Información de vehículos disponibles -->
+                        <div class="alert alert-info mb-3" id="debugModalInfo" style="display: none;">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Información de depuración:</strong><br>
+                            Vehículos disponibles: <span id="modalVehiculosCount">0</span><br>
+                            Primer vehículo: <span id="modalFirstVehiculo">No disponible</span>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="id_vehiculo" class="form-label">Vehículo <span
@@ -663,15 +718,19 @@
                                 <select class="form-select" id="id_vehiculo" name="id_vehiculo" required>
                                     <option value="">Seleccionar vehículo...</option>
                                     <% if (vehiculos && vehiculos.length> 0) { %>
-                                        <% vehiculos.forEach(vehiculo=> { %>
-                                            <option value="<%= vehiculo.id_vehiculo %>">
-                                                <%= vehiculo.placa %> - <%= vehiculo.marca %>
-                                                        <%= vehiculo.modelo %>
-                                            </option>
-                                            <% }); %>
-                                                <% } else { %>
-                                                    <option value="" disabled>No hay vehículos disponibles</option>
-                                                    <% } %>
+                                        <% console.log('DEBUG - Vehículos en vista:', vehiculos); %>
+                                            <% vehiculos.forEach(vehiculo=> { %>
+                                                <option value="<%= vehiculo.id_vehiculo %>">
+                                                    <%= vehiculo.patente %> - <%= vehiculo.marca %>
+                                                            <%= vehiculo.modelo %>
+                                                                <% if (vehiculo.nombre_cliente) { %> (Cliente: <%=
+                                                                        vehiculo.nombre_cliente %>)<% } %>
+                                                </option>
+                                                <% }); %>
+                                                    <% } else { %>
+                                                        <option value="" disabled>No hay vehículos disponibles</option>
+                                                        <% console.log('DEBUG - No hay vehículos en la vista'); %>
+                                                            <% } %>
                                 </select>
                                 <div class="form-text">Seleccione el vehículo al que pertenece el documento</div>
                             </div>
@@ -685,12 +744,13 @@
                                     <% if (tiposDocumentos && tiposDocumentos.length> 0) { %>
                                         <% tiposDocumentos.forEach(tipo=> { %>
                                             <option value="<%= tipo.id_tipo_documento_veh %>">
-                                                <%= tipo.nombre %>
+                                                <%= tpo.nombre %>
                                                     <% if (tipo.descripcion) { %> - <%= tipo.descripcion %>
                                                             <% } %>
                                             </option>
                                             <% }); %>
                                                 <% } else { %>
+                                                    <!-- Tipos por defecto -->
                                                     <option value="1">SOAT</option>
                                                     <option value="2">Revisión Técnica</option>
                                                     <option value="3">Seguro Contractual</option>
@@ -892,259 +952,68 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 
     <script>
-        $(document).ready(function () {
-            // Inicializar DataTable
-            if ($('#tablaDocumentos').length) {
-                $('#tablaDocumentos').DataTable({
-                    language: {
-                        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-                    },
-                    order: [[3, 'asc']], // Ordenar por fecha de vencimiento
-                    pageLength: 10,
-                    responsive: true
+        $(function () {
+
+            const select = $('#id_vehiculo');
+            const status = $('#vehiculoStatus');
+
+            select.select2({
+                dropdownParent: $('#modalNuevoDocumento'),
+                width: '100%',
+                placeholder: 'Buscar vehículo'
+            });
+
+            function cargarVehiculos() {
+
+                status.html('<span class="spinner-border spinner-border-sm"></span> cargando vehículos...');
+
+                $.get('/documentos/api/vehiculos', resp => {
+
+                    select.empty().append('<option></option>');
+
+                    if (!resp.success || !resp.vehiculos.length) {
+                        status.text('❌ No hay vehículos');
+                        return;
+                    }
+
+                    resp.vehiculos.forEach(v => {
+                        select.append(new Option(
+                            `${v.patente} | ${v.marca} ${v.modelo}`,
+                            v.id_vehiculo
+                        ));
+                    });
+
+                    status.text(`✔ ${resp.vehiculos.length} vehículos cargados`);
+
+                    const last = localStorage.getItem('vehiculoSeleccionado');
+
+                    select.val(last || resp.vehiculos[0].id_vehiculo).trigger('change');
+
                 });
+
             }
 
-            // Configurar fecha mínima para vencimiento
-            const hoy = new Date().toISOString().split('T')[0];
-            $('#fecha_vencimiento').attr('min', hoy);
+            $('#modalNuevoDocumento').on('shown.bs.modal', cargarVehiculos);
 
-            // Configurar fecha máxima para emisión
-            $('#fecha_emision').attr('max', hoy);
-        });
+            select.on('change', () => {
+                localStorage.setItem('vehiculoSeleccionado', select.val());
+            });
 
-        // Función para previsualizar archivo
-        function previewFile(input) {
-            const preview = document.getElementById('filePreview');
-            const uploadArea = document.getElementById('uploadArea');
-
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                const reader = new FileReader();
-
-                reader.onload = function (e) {
-                    preview.innerHTML = '';
-
-                    if (file.type.startsWith('image/')) {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.className = 'file-preview';
-                        preview.appendChild(img);
-                    } else if (file.type === 'application/pdf') {
-                        const icon = document.createElement('i');
-                        icon.className = 'bi bi-file-earmark-pdf text-danger';
-                        icon.style.fontSize = '4rem';
-                        preview.appendChild(icon);
-                    }
-
-                    const fileName = document.createElement('p');
-                    fileName.className = 'mt-2 mb-0';
-                    fileName.textContent = file.name;
-                    preview.appendChild(fileName);
-
-                    uploadArea.style.borderColor = '#198754';
-                    uploadArea.style.backgroundColor = '#e8f5e9';
-                };
-
-                reader.readAsDataURL(file);
-            }
-        }
-
-        // Función para ver detalle de documento
-        function verDetalleDocumento(idDocumento) {
-            window.location.href = `/documentos/detalle/${idDocumento}`;
-        }
-
-        // Función para editar documento
-        function editarDocumento(idDocumento) {
-            window.location.href = `/documentos/editar/${idDocumento}`;
-        }
-
-        // Función para enviar recordatorio
-        function enviarRecordatorio(idDocumento) {
-            if (confirm('¿Enviar recordatorio por correo electrónico?')) {
-                fetch(`/documentos/recordatorio/${idDocumento}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        alert(data.message || 'Recordatorio enviado correctamente');
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error al enviar el recordatorio');
-                    });
-            }
-        }
-
-        // Función para actualizar estados
-        function actualizarEstados() {
-            if (confirm('¿Actualizar estados de documentos automáticamente?')) {
-                fetch('/documentos/actualizar-estados')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Estados actualizados correctamente');
-                            location.reload();
-                        } else {
-                            alert('Error al actualizar estados');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error al actualizar estados');
-                    });
-            }
-        }
-
-        // Función para generar reporte
-        function generarReporte() {
-            const tipo = $('#tipoReporte').val();
-            const formato = $('input[name="formatoReporte"]:checked').val();
-
-            alert(`Generando reporte ${tipo} en formato ${formato.toUpperCase()}...`);
-
-            // En una implementación real, esto haría una petición al servidor
-            // Por ahora simulamos la generación
-            setTimeout(() => {
-                alert('Reporte generado. Comenzando descarga...');
-                // Redirigir a la ruta de generación de reporte
-                window.location.href = `/documentos/reporte?tipo=${tipo}&formato=${formato}`;
-            }, 1000);
-        }
-
-        // Validación del formulario
-        document.getElementById('formNuevoDocumento').addEventListener('submit', function (e) {
-            const fechaVencimiento = document.getElementById('fecha_vencimiento').value;
-            const fechaEmision = document.getElementById('fecha_emision').value;
-
-            if (fechaEmision && fechaVencimiento && fechaVencimiento < fechaEmision) {
-                e.preventDefault();
-                alert('La fecha de vencimiento no puede ser anterior a la fecha de emisión');
-                return false;
-            }
-
-            if (!fechaVencimiento) {
-                e.preventDefault();
-                alert('La fecha de vencimiento es obligatoria');
-                return false;
-            }
-
-            // Validar archivo si se seleccionó
-            const archivoInput = document.getElementById('archivo_documento');
-            if (archivoInput.files.length > 0) {
-                const archivo = archivoInput.files[0];
-                const maxSize = 10 * 1024 * 1024; // 10MB
-
-                if (archivo.size > maxSize) {
+            $('#formNuevoDocumento').on('submit', e => {
+                if (!select.val()) {
                     e.preventDefault();
-                    alert('El archivo es demasiado grande. Tamaño máximo: 10MB');
-                    return false;
+                    alert('Seleccione vehículo');
                 }
+            });
 
-                const extensionesPermitidas = ['.pdf', '.jpg', '.jpeg', '.png'];
-                const extension = archivo.name.substring(archivo.name.lastIndexOf('.')).toLowerCase();
-
-                if (!extensionesPermitidas.includes(extension)) {
-                    e.preventDefault();
-                    alert('Formato de archivo no permitido. Use PDF, JPG o PNG');
-                    return false;
-                }
-            }
-
-            // Mostrar mensaje de procesamiento
-            const submitBtn = this.querySelector('button[type="submit"]');
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...';
-            submitBtn.disabled = true;
-
-            return true;
         });
-
-        // Actualizar contadores en tiempo real
-        function actualizarContador(id, valor) {
-            const elemento = document.getElementById(id);
-            if (elemento) {
-                let current = parseInt(elemento.textContent) || 0;
-                const target = parseInt(valor) || 0;
-
-                if (current !== target) {
-                    const incremento = target > current ? 1 : -1;
-                    const interval = setInterval(() => {
-                        current += incremento;
-                        elemento.textContent = current;
-
-                        if (current === target) {
-                            clearInterval(interval);
-                        }
-                    }, 50);
-                }
-            }
-        }
-
-        // CORRECCIÓN: Esta es la parte arreglada (líneas 1005-1010 originales)
-        window.addEventListener('load', function () {
-            // Primero verificar que la función exista
-            if (typeof actualizarContador !== 'function') {
-                console.warn('La función actualizarContador no está definida');
-                return;
-            }
-
-            // Obtener valores de los elementos HTML ya renderizados
-            const totalElement = document.getElementById('totalDocumentos');
-            const vigentesElement = document.getElementById('documentosVigentes');
-            const porVencerElement = document.getElementById('documentosPorVencer');
-            const vencidosElement = document.getElementById('documentosVencidos');
-
-            if (totalElement && vigentesElement && porVencerElement && vencidosElement) {
-                // Resetear contadores a 0 para animación
-                const totalValue = parseInt(totalElement.textContent) || 0;
-                const vigentesValue = parseInt(vigentesElement.textContent) || 0;
-                const porVencerValue = parseInt(porVencerElement.textContent) || 0;
-                const vencidosValue = parseInt(vencidosElement.textContent) || 0;
-
-                // Animar contadores desde 0
-                actualizarContador('totalDocumentos', totalValue);
-                actualizarContador('documentosVigentes', vigentesValue);
-                actualizarContador('documentosPorVencer', porVencerValue);
-                actualizarContador('documentosVencidos', vencidosValue);
-            }
-        });
-
-        // Arrastrar y soltar archivos
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('archivo_documento');
-
-        if (uploadArea) {
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = '#0d6efd';
-                uploadArea.style.backgroundColor = '#e9f7fe';
-            });
-
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.style.borderColor = '#dee2e6';
-                uploadArea.style.backgroundColor = '#f8f9fa';
-            });
-
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = '#dee2e6';
-                uploadArea.style.backgroundColor = '#f8f9fa';
-
-                if (e.dataTransfer.files.length) {
-                    fileInput.files = e.dataTransfer.files;
-                    previewFile(fileInput);
-                }
-            });
-        }
     </script>
+
+
+
 </body>
 
 </html>
