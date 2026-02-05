@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="es">
 
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>
         <%= title || 'Gestión Documental' %>
     </title>
+
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    <!-- CSS Personalizado -->
+
+    <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
 
     <style>
@@ -214,6 +217,29 @@
             justify-content: center;
             cursor: pointer;
             font-weight: bold;
+        }
+
+        /* Estilos para selección de ID manual */
+        .id-input-group {
+            transition: all 0.3s ease;
+        }
+
+        .vehiculo-info-box {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        .search-toggle {
+            cursor: pointer;
+            color: var(--primary-custom);
+            text-decoration: none;
+        }
+
+        .search-toggle:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -688,7 +714,7 @@
 
     <!-- Modales -->
 
-    <!-- Modal Nuevo Documento -->
+    <!-- Modal Nuevo Documento (MODIFICADO PARA BUSCAR POR PATENTE) -->
     <div class="modal fade" id="modalNuevoDocumento" tabindex="-1" aria-labelledby="modalNuevoDocumentoLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -703,38 +729,124 @@
                 <form id="formNuevoDocumento" action="/documentos/vehiculo/registrar" method="POST"
                     enctype="multipart/form-data">
                     <div class="modal-body">
-                        <!-- DEBUG: Información de vehículos disponibles -->
-                        <div class="alert alert-info mb-3" id="debugModalInfo" style="display: none;">
+                        <!-- Información de vehículos disponibles -->
+                        <div class="alert alert-info mb-3">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>Información de depuración:</strong><br>
-                            Vehículos disponibles: <span id="modalVehiculosCount">0</span><br>
-                            Primer vehículo: <span id="modalFirstVehiculo">No disponible</span>
+                            <strong>Información:</strong>
+                            Puedes seleccionar un vehículo de la lista o buscar por patente si conoces la patente del
+                            vehículo.
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="id_vehiculo" class="form-label">Vehículo <span
+                        <!-- SELECCIÓN DE VEHÍCULO - OPCIÓN 1: Select normal -->
+                        <div class="row mb-4">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label fw-bold">Selección del Vehículo</label>
+
+                                <div class="d-flex mb-3">
+                                    <div class="form-check me-4">
+                                        <input class="form-check-input" type="radio" name="seleccion_vehiculo"
+                                            id="seleccionSelect" value="select" checked>
+                                        <label class="form-check-label" for="seleccionSelect">
+                                            Seleccionar de la lista
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="seleccion_vehiculo"
+                                            id="seleccionManual" value="manual">
+                                        <label class="form-check-label" for="seleccionManual">
+                                            Buscar por patente
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OPCIÓN 1: Select normal (oculto cuando se selecciona manual) -->
+                        <div class="row" id="opcionSelect">
+                            <div class="col-md-12 mb-3">
+                                <label for="id_vehiculo_select" class="form-label">Seleccionar Vehículo <span
                                         class="text-danger">*</span></label>
-                                <select class="form-select" id="id_vehiculo" name="id_vehiculo" required>
+                                <select class="form-select" id="id_vehiculo_select" name="id_vehiculo_select">
                                     <option value="">Seleccionar vehículo...</option>
                                     <% if (vehiculos && vehiculos.length> 0) { %>
-                                        <% console.log('DEBUG - Vehículos en vista:', vehiculos); %>
-                                            <% vehiculos.forEach(vehiculo=> { %>
-                                                <option value="<%= vehiculo.id_vehiculo %>">
-                                                    <%= vehiculo.patente %> - <%= vehiculo.marca %>
+                                        <% vehiculos.forEach(vehiculo=> { %>
+                                            <option value="<%= vehiculo.id_vehiculo %>"
+                                                data-patente="<%= vehiculo.patente %>"
+                                                data-marca="<%= vehiculo.marca %>" data-modelo="<%= vehiculo.modelo %>"
+                                                data-cliente="<%= vehiculo.nombre_cliente || 'Sin cliente' %>">
+                                                ID: <%= vehiculo.id_vehiculo %> - <%= vehiculo.patente %> - <%=
+                                                            vehiculo.marca %>
                                                             <%= vehiculo.modelo %>
                                                                 <% if (vehiculo.nombre_cliente) { %> (Cliente: <%=
                                                                         vehiculo.nombre_cliente %>)<% } %>
-                                                </option>
-                                                <% }); %>
-                                                    <% } else { %>
-                                                        <option value="" disabled>No hay vehículos disponibles</option>
-                                                        <% console.log('DEBUG - No hay vehículos en la vista'); %>
-                                                            <% } %>
+                                            </option>
+                                            <% }); %>
+                                                <% } else { %>
+                                                    <option value="" disabled>No hay vehículos disponibles en la lista
+                                                    </option>
+                                                    <% } %>
                                 </select>
-                                <div class="form-text">Seleccione el vehículo al que pertenece el documento</div>
+                                <div class="form-text">Selecciona un vehículo de la lista desplegable</div>
                             </div>
+                        </div>
 
+                        <!-- OPCIÓN 2: Buscar por Patente (oculto inicialmente) -->
+                        <div class="row" id="opcionManual" style="display: none;">
+                            <div class="col-md-12 mb-3">
+                                <label for="patente_busqueda" class="form-label">Buscar por Patente <span
+                                        class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-car-front"></i></span>
+                                    <input type="text" class="form-control" id="patente_busqueda"
+                                        name="patente_busqueda" placeholder="Ej: ABC123, XYZ789, etc." maxlength="10"
+                                        style="text-transform:uppercase;">
+                                    <button type="button" class="btn btn-outline-secondary"
+                                        onclick="buscarVehiculoPorPatente()" id="btnBuscarVehiculo">
+                                        <i class="bi bi-search"></i> Buscar
+                                    </button>
+                                </div>
+                                <div class="form-text">Ingresa la patente del vehículo (ej: ABC123, XYZ789)</div>
+
+                                <!-- Información del vehículo encontrado -->
+                                <div id="vehiculoInfo" class="vehiculo-info-box mt-3" style="display: none;">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-check-circle text-success me-2"></i>Vehículo
+                                            encontrado</h6>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="limpiarBusqueda()">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                    <div class="row small">
+                                        <div class="col-6">
+                                            <strong>ID:</strong> <span id="infoId">-</span><br>
+                                            <strong>Patente:</strong> <span id="infoPatente">-</span><br>
+                                            <strong>Marca/Modelo:</strong> <span id="infoMarcaModelo">-</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Cliente:</strong> <span id="infoCliente">-</span><br>
+                                            <strong>Año:</strong> <span id="infoAnio">-</span><br>
+                                            <strong>Estado:</strong> <span id="infoEstado">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Mensaje si no se encuentra el vehículo -->
+                                <div id="vehiculoNoEncontrado" class="alert alert-warning mt-3" style="display: none;">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    No se encontró un vehículo con esa patente. Verifica la patente o
+                                    <a href="/vehiculos" target="_blank" class="alert-link">ve a la lista de
+                                        vehículos</a>
+                                    para ver las patentes disponibles.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campo oculto que se enviará al servidor -->
+                        <input type="hidden" id="id_vehiculo_final" name="id_vehiculo" value="">
+
+                        <!-- TIPO DE DOCUMENTO -->
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="id_tipo_documento_veh" class="form-label">Tipo de Documento <span
                                         class="text-danger">*</span></label>
@@ -744,7 +856,7 @@
                                     <% if (tiposDocumentos && tiposDocumentos.length> 0) { %>
                                         <% tiposDocumentos.forEach(tipo=> { %>
                                             <option value="<%= tipo.id_tipo_documento_veh %>">
-                                                <%= tpo.nombre %>
+                                                <%= tipo.nombre %>
                                                     <% if (tipo.descripcion) { %> - <%= tipo.descripcion %>
                                                             <% } %>
                                             </option>
@@ -762,9 +874,7 @@
                                 </select>
                                 <div class="form-text">Tipo de documento según catálogo</div>
                             </div>
-                        </div>
 
-                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="numero_documento" class="form-label">Número de Documento <span
                                         class="text-danger">*</span></label>
@@ -772,15 +882,15 @@
                                     placeholder="Ej: SOAT-001-2024" required>
                                 <div class="form-text">Número único del documento</div>
                             </div>
+                        </div>
 
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="fecha_emision" class="form-label">Fecha de Emisión</label>
                                 <input type="date" class="form-control" id="fecha_emision" name="fecha_emision">
                                 <div class="form-text">Fecha en que se emitió el documento</div>
                             </div>
-                        </div>
 
-                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="fecha_vencimiento" class="form-label">Fecha de Vencimiento <span
                                         class="text-danger">*</span></label>
@@ -788,7 +898,9 @@
                                     required>
                                 <div class="form-text">Fecha límite de validez del documento</div>
                             </div>
+                        </div>
 
+                        <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="dias_alerta" class="form-label">Días para Alerta</label>
                                 <input type="number" class="form-control" id="dias_alerta" name="dias_alerta" value="30"
@@ -955,65 +1067,280 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
 
     <script>
-        $(function () {
-
-            const select = $('#id_vehiculo');
-            const status = $('#vehiculoStatus');
-
-            select.select2({
-                dropdownParent: $('#modalNuevoDocumento'),
-                width: '100%',
-                placeholder: 'Buscar vehículo'
-            });
-
-            function cargarVehiculos() {
-
-                status.html('<span class="spinner-border spinner-border-sm"></span> cargando vehículos...');
-
-                $.get('/documentos/api/vehiculos', resp => {
-
-                    select.empty().append('<option></option>');
-
-                    if (!resp.success || !resp.vehiculos.length) {
-                        status.text('❌ No hay vehículos');
-                        return;
-                    }
-
-                    resp.vehiculos.forEach(v => {
-                        select.append(new Option(
-                            `${v.patente} | ${v.marca} ${v.modelo}`,
-                            v.id_vehiculo
-                        ));
-                    });
-
-                    status.text(`✔ ${resp.vehiculos.length} vehículos cargados`);
-
-                    const last = localStorage.getItem('vehiculoSeleccionado');
-
-                    select.val(last || resp.vehiculos[0].id_vehiculo).trigger('change');
-
+        $(document).ready(function () {
+            // Inicializar DataTable
+            if ($('#tablaDocumentos').length) {
+                $('#tablaDocumentos').DataTable({
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                    },
+                    pageLength: 10,
+                    responsive: true,
+                    order: [[3, 'asc']]
                 });
-
             }
 
-            $('#modalNuevoDocumento').on('shown.bs.modal', cargarVehiculos);
+            // Manejar cambio entre selección por lista o búsqueda por patente
+            $('input[name="seleccion_vehiculo"]').change(function () {
+                const seleccion = $(this).val();
 
-            select.on('change', () => {
-                localStorage.setItem('vehiculoSeleccionado', select.val());
-            });
-
-            $('#formNuevoDocumento').on('submit', e => {
-                if (!select.val()) {
-                    e.preventDefault();
-                    alert('Seleccione vehículo');
+                if (seleccion === 'select') {
+                    $('#opcionSelect').show();
+                    $('#opcionManual').hide();
+                    // Limpiar búsqueda manual
+                    limpiarBusqueda();
+                    // Actualizar campo oculto
+                    $('#id_vehiculo_final').val($('#id_vehiculo_select').val());
+                } else {
+                    $('#opcionSelect').hide();
+                    $('#opcionManual').show();
+                    // Limpiar campo oculto
+                    $('#id_vehiculo_final').val('');
                 }
             });
 
+            // Cuando se selecciona un vehículo de la lista
+            $('#id_vehiculo_select').change(function () {
+                const selectedId = $(this).val();
+                $('#id_vehiculo_final').val(selectedId);
+            });
+
+            // Cuando se escribe una patente manualmente
+            $('#patente_busqueda').on('input', function () {
+                // Convertir a mayúsculas mientras se escribe
+                $(this).val($(this).val().toUpperCase());
+                // Limpiar información anterior
+                $('#vehiculoInfo').hide();
+                $('#vehiculoNoEncontrado').hide();
+                $('#id_vehiculo_final').val('');
+            });
+
+            // Auto-búsqueda después de 1 segundo de inactividad (opcional)
+            let searchTimeout;
+            $('#patente_busqueda').on('keyup', function () {
+                clearTimeout(searchTimeout);
+                const patente = $(this).val().trim();
+                if (patente.length >= 3) {
+                    searchTimeout = setTimeout(() => {
+                        buscarVehiculoPorPatente();
+                    }, 1000);
+                }
+            });
+
+            // Validación del formulario
+            $('#formNuevoDocumento').on('submit', function (e) {
+                e.preventDefault();
+
+                const seleccion = $('input[name="seleccion_vehiculo"]:checked').val();
+                let vehiculoId = '';
+
+                if (seleccion === 'select') {
+                    vehiculoId = $('#id_vehiculo_select').val();
+                } else {
+                    vehiculoId = $('#id_vehiculo_final').val();
+                }
+
+                // Validar que se haya seleccionado/encontrado un vehículo
+                if (!vehiculoId) {
+                    if (seleccion === 'select') {
+                        alert('Por favor selecciona un vehículo de la lista');
+                        $('#id_vehiculo_select').focus();
+                    } else {
+                        alert('Por favor busca y selecciona un vehículo por patente');
+                        $('#patente_busqueda').focus();
+                    }
+                    return false;
+                }
+
+                // Validar otros campos obligatorios
+                const tipoDoc = $('#id_tipo_documento_veh').val();
+                const numeroDoc = $('#numero_documento').val().trim();
+                const fechaVenc = $('#fecha_vencimiento').val();
+
+                if (!tipoDoc || !numeroDoc || !fechaVenc) {
+                    alert('Por favor completa todos los campos obligatorios (*)');
+                    return false;
+                }
+
+                // Validar fechas
+                const fechaEmision = $('#fecha_emision').val();
+                if (fechaEmision && fechaVenc) {
+                    const fechaEmisionDate = new Date(fechaEmision);
+                    const fechaVencimientoDate = new Date(fechaVenc);
+
+                    if (fechaVencimientoDate < fechaEmisionDate) {
+                        alert('La fecha de vencimiento no puede ser anterior a la fecha de emisión');
+                        return false;
+                    }
+                }
+
+                // Si todo está bien, enviar el formulario
+                this.submit();
+            });
+
+            // Preview de archivo
+            function previewFile(input) {
+                const preview = document.getElementById('filePreview');
+                if (input.files && input.files[0]) {
+                    const file = input.files[0];
+                    const reader = new FileReader();
+
+                    reader.onload = function (e) {
+                        if (file.type.startsWith('image/')) {
+                            preview.innerHTML = '<img src="' + e.target.result + '" class="file-preview" alt="Preview">';
+                        } else if (file.type === 'application/pdf') {
+                            preview.innerHTML = '<div class="alert alert-info p-2">' +
+                                '<i class="bi bi-file-earmark-pdf text-danger me-2"></i>' +
+                                'Archivo PDF listo para subir' +
+                                '</div>';
+                        } else {
+                            preview.innerHTML = '<div class="alert alert-secondary p-2">' +
+                                'Archivo: ' + file.name +
+                                '</div>';
+                        }
+                    };
+
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.innerHTML = '';
+                }
+            }
+
+            // Panel de depuración
+            $('#debugToggle').click(function () {
+                $('#debugPanel').toggle();
+                updateDebugInfo();
+            });
+
+            function updateDebugInfo() {
+                const vehiculosCount = $('#id_vehiculo_select option').length - 2;
+                $('#debugVehiculosCount').text(vehiculosCount > 0 ? vehiculosCount : 0);
+
+                const tiposCount = $('#id_tipo_documento_veh option').length - 1;
+                $('#debugTiposCount').text(tiposCount > 0 ? tiposCount : 0);
+
+                $('#debugDocumentosCount').text('<%= totalDocumentos || 0 %>');
+
+                // Obtener último vehículo
+                const lastVehiculo = $('#id_vehiculo_select option:last');
+                if (lastVehiculo.length && lastVehiculo.val()) {
+                    $('#debugLastVehiculo').text('ID: ' + lastVehiculo.val() + ' - ' + lastVehiculo.text().substring(0, 30) + '...');
+                }
+            }
+
+            // Inicializar
+            updateDebugInfo();
+            window.previewFile = previewFile;
         });
+
+        // FUNCIÓN PARA BUSCAR VEHÍCULO POR PATENTE
+        function buscarVehiculoPorPatente() {
+            const patente = $('#patente_busqueda').val().trim().toUpperCase();
+
+            if (!patente) {
+                alert('Por favor ingresa una patente de vehículo');
+                return;
+            }
+
+            // Validar formato básico de patente (puedes ajustar según tu país)
+            if (patente.length < 3) {
+                alert('La patente debe tener al menos 3 caracteres');
+                return;
+            }
+
+            // Mostrar loading
+            const btnBuscar = $('#btnBuscarVehiculo');
+            btnBuscar.html('<span class="spinner-border spinner-border-sm"></span> Buscando...');
+            btnBuscar.prop('disabled', true);
+
+            // Hacer petición AJAX para buscar el vehículo por patente
+            $.ajax({
+                url: '/documentos/api/vehiculo/patente/' + encodeURIComponent(patente),
+                method: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    btnBuscar.html('<i class="bi bi-search"></i> Buscar');
+                    btnBuscar.prop('disabled', false);
+
+                    if (response.success && response.vehiculo) {
+                        const v = response.vehiculo;
+
+                        // Mostrar información del vehículo
+                        $('#infoId').text(v.id_vehiculo);
+                        $('#infoPatente').text(v.patente || 'No disponible');
+                        $('#infoMarcaModelo').text((v.marca || '') + ' ' + (v.modelo || ''));
+                        $('#infoCliente').text(v.nombre_cliente || 'Sin cliente asignado');
+                        $('#infoAnio').text(v.anio || 'No disponible');
+                        $('#infoEstado').html(v.activo ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>');
+
+                        $('#vehiculoInfo').show();
+                        $('#vehiculoNoEncontrado').hide();
+
+                        // Actualizar el campo oculto con el ID encontrado
+                        $('#id_vehiculo_final').val(v.id_vehiculo);
+
+                        // Mostrar mensaje de éxito
+                        console.log('Vehículo encontrado por patente:', v);
+                    } else {
+                        // Mostrar mensaje de no encontrado
+                        $('#vehiculoInfo').hide();
+                        $('#vehiculoNoEncontrado').show();
+
+                        // Limpiar campo oculto
+                        $('#id_vehiculo_final').val('');
+
+                        console.log('Vehículo no encontrado por patente:', patente);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    btnBuscar.html('<i class="bi bi-search"></i> Buscar');
+                    btnBuscar.prop('disabled', false);
+
+                    // Mostrar mensaje de error
+                    $('#vehiculoInfo').hide();
+                    $('#vehiculoNoEncontrado').show();
+                    $('#id_vehiculo_final').val('');
+
+                    console.error('Error al buscar vehículo por patente:', error);
+                    alert('Error al buscar vehículo. Por favor, inténtalo de nuevo.');
+                }
+            });
+        }
+
+        // FUNCIÓN PARA LIMPIAR BÚSQUEDA
+        function limpiarBusqueda() {
+            $('#patente_busqueda').val('');
+            $('#vehiculoInfo').hide();
+            $('#vehiculoNoEncontrado').hide();
+            $('#id_vehiculo_final').val('');
+        }
+
+        // FUNCIONES GLOBALES (placeholder)
+        function verDetalleDocumento(id) {
+            alert('Ver detalle del documento: ' + id);
+            // Implementar lógica para ver detalle
+        }
+
+        function editarDocumento(id) {
+            alert('Editar documento: ' + id);
+            // Implementar lógica para editar
+        }
+
+        function enviarRecordatorio(id) {
+            alert('Enviar recordatorio para documento: ' + id);
+            // Implementar lógica para enviar recordatorio
+        }
+
+        function actualizarEstados() {
+            alert('Actualizando estados de documentos...');
+            location.reload();
+        }
+
+        function generarReporte() {
+            alert('Generando reporte...');
+            // Implementar lógica para generar reporte
+        }
     </script>
-
-
-
 </body>
 
 </html>
