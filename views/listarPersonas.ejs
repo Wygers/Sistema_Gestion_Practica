@@ -8,63 +8,47 @@
         <%= title %>
     </title>
 
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-
-    <!-- CSS Personalizado -->
     <link rel="stylesheet" href="/css/Index.css">
 
     <style>
         .table-hover tbody tr:hover {
-            background-color: rgba(13, 110, 253, 0.05);
+            background: rgba(13, 110, 253, .05)
         }
 
         .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .filter-card {
-            border-left: 4px solid #0d6efd;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff
         }
 
         .persona-row {
-            cursor: pointer;
-            transition: all 0.2s;
+            transition: .2s
         }
 
         .persona-row:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, .1)
         }
 
         .navbar-custom {
-            background-color: #0d6efd;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+            background: #0d6efd
         }
 
         .footer-custom {
-            background-color: #343a40;
+            background: #343a40;
             color: white;
-            padding: 1rem 0;
-            margin-top: 2rem;
+            padding: 1rem;
+            margin-top: 2rem
         }
     </style>
 </head>
 
 <body>
-    <!-- Navbar simplificado -->
+
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/">
-                <i class="bi bi-car-front-fill me-2"></i>Gestión Vehicular
-            </a>
+            <a class="navbar-brand fw-bold" href="/"><i class="bi bi-car-front-fill"></i> Gestión Vehicular</a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="/">Inicio</a>
                 <a class="nav-link active" href="/personas">Personas</a>
@@ -75,173 +59,162 @@
     </nav>
 
     <main class="container-fluid mt-4">
-        <!-- Encabezado -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <div>
-                            <h2 class="mb-0">
-                                <i class="bi bi-people me-2"></i>Listado de Personas
-                            </h2>
-                            <small class="opacity-75">Gestión completa de personas registradas</small>
-                        </div>
-                        <a href="/personas/agregar" class="btn btn-light">
-                            <i class="bi bi-person-plus me-1"></i>Agregar Nueva
-                        </a>
-                    </div>
-                    <!-- Usa esto: -->
-                    <% if (typeof success !=='undefined' && success) { %>
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="bi bi-check-circle me-2"></i>
-                            <%= success %>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                        <% } %>
 
-                            <% if (typeof error !=='undefined' && error) { %>
-                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                    <%= error %>
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                                <% } %>
+        <div class="card shadow mb-3">
+            <div class="card-header d-flex justify-content-between">
+                <div>
+                    <h3><i class="bi bi-people"></i> Listado de Personas</h3>
+                    <small>Gestión completa</small>
                 </div>
+                <a href="/personas/agregar" class="btn btn-light"><i class="bi bi-person-plus"></i> Agregar</a>
+            </div>
+
+            <div class="card-body">
+
+                <!-- FILTROS -->
+                <div class="row mb-3">
+
+                    <div class="col-md-3">
+                        <input class="form-control" id="filtroNombre" placeholder="Nombre / Apellido">
+                    </div>
+
+                    <div class="col-md-3">
+                        <input class="form-control" id="filtroRun" placeholder="RUN">
+                    </div>
+
+                    <div class="col-md-3">
+                        <input class="form-control" id="filtroEmail" placeholder="Email">
+                    </div>
+
+                    <div class="col-md-3">
+                        <select class="form-select" id="filtroEstado">
+                            <option value="">Todos</option>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Apellido</th>
+                            <th>RUN</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        <% personas.forEach(persona=> { %>
+
+                            <tr class="persona-row">
+
+                                <td>
+                                    <%= persona.id_persona || persona.id %>
+                                </td>
+                                <td>
+                                    <%= persona.nombres || persona.nombre %>
+                                </td>
+                                <td>
+                                    <%= persona.apellido_paterno || persona.apellido %>
+                                </td>
+                                <td>
+                                    <%= persona.cedula || persona.run %>
+                                </td>
+                                <td>
+                                    <%= persona.telefono %>
+                                </td>
+                                <td>
+                                    <%= persona.email %>
+                                </td>
+
+                                <td>
+                                    <% if(persona.activo || persona.estado==='activo' ){ %>
+                                        <span class="badge bg-success">Activo</span>
+                                        <% } else { %>
+                                            <span class="badge bg-danger">Inactivo</span>
+                                            <% } %>
+                                </td>
+
+                                <td>
+                                    <a href="/personas/editar/<%= persona.id_persona || persona.id %>"
+                                        class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                                    <a href="/personas/eliminar/<%= persona.id_persona || persona.id %>"
+                                        class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                </td>
+
+                            </tr>
+
+                            <% }) %>
+
+                    </tbody>
+                </table>
+
+                <div class="text-muted mt-2">
+                    Mostrando <span id="contador">
+                        <%= personas.length %>
+                    </span> personas
+                </div>
+
             </div>
         </div>
 
-        <!-- Contenido principal -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow">
-                    <div class="card-body">
-                        <% if (personas.length===0) { %>
-                            <div class="text-center py-5">
-                                <i class="bi bi-people display-1 text-muted"></i>
-                                <h4 class="mt-3">No hay personas registradas</h4>
-                                <p class="text-muted">Comienza agregando la primera persona al sistema.</p>
-                                <a href="/personas/agregar" class="btn btn-primary">
-                                    <i class="bi bi-person-plus me-1"></i>Agregar Primera Persona
-                                </a>
-                                <a href="/" class="btn btn-outline-secondary ms-2">
-                                    <i class="bi bi-house me-1"></i>Volver al Inicio
-                                </a>
-                            </div>
-                            <% } else { %>
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Nombre</th>
-                                                <th>Apellido</th>
-                                                <th>Cédula/RUN</th>
-                                                <th>Teléfono</th>
-                                                <th>Email</th>
-                                                <th>Estado</th>
-                                                <th>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <% personas.forEach(persona=> { %>
-                                                <tr>
-                                                    <td>
-                                                        <%= persona.id_persona || persona.id %>
-                                                    </td>
-                                                    <td>
-                                                        <%= persona.nombres || persona.nombre %>
-                                                    </td>
-                                                    <td>
-                                                        <%= persona.apellido_paterno || persona.apellido %>
-                                                    </td>
-                                                    <td>
-                                                        <%= persona.cedula || persona.run || 'N/A' %>
-                                                    </td>
-                                                    <td>
-                                                        <%= persona.telefono || 'N/A' %>
-                                                    </td>
-                                                    <td>
-                                                        <%= persona.email || 'N/A' %>
-                                                    </td>
-                                                    <td>
-                                                        <% if (persona.activo || persona.estado==='activo' ) { %>
-                                                            <span class="badge bg-success">Activo</span>
-                                                            <% } else { %>
-                                                                <span class="badge bg-danger">Inactivo</span>
-                                                                <% } %>
-                                                    </td>
-                                                    <td>
-                                                        <div class="btn-group btn-group-sm">
-                                                            <a href="/personas/editar/<%= persona.id_persona || persona.id %>"
-                                                                class="btn btn-outline-warning">
-                                                                <i class="bi bi-pencil"></i>
-                                                            </a>
-                                                            <a href="/personas/eliminar/<%= persona.id_persona || persona.id %>"
-                                                                class="btn btn-outline-danger"
-                                                                onclick="return confirm('¿Está seguro de eliminar esta persona?')">
-                                                                <i class="bi bi-trash"></i>
-                                                            </a>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                <% }); %>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <div>
-                                        <span class="text-muted">
-                                            Mostrando <strong>
-                                                <%= personas.length %>
-                                            </strong> persona(s)
-                                        </span>
-                                    </div>
-                                    <div>
-                                        <a href="/personas/agregar" class="btn btn-primary">
-                                            <i class="bi bi-person-plus me-1"></i>Agregar Nueva
-                                        </a>
-                                        <a href="/" class="btn btn-outline-secondary ms-2">
-                                            <i class="bi bi-house me-1"></i>Volver al Inicio
-                                        </a>
-                                    </div>
-                                </div>
-                                <% } %>
-                    </div>
-                </div>
-            </div>
-        </div>
     </main>
 
-    <!-- Footer simplificado -->
-    <footer class="footer-custom text-center mt-5">
-        <div class="container">
-            <p class="mb-0">
-                &copy; <%= new Date().getFullYear() %> Sistema de Gestión Vehicular
-            </p>
-            <small>Control • Seguridad • Reportes</small>
-        </div>
+    <footer class="footer-custom text-center">
+        &copy; <%= new Date().getFullYear() %> Sistema Gestión Vehicular
     </footer>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <script>
-        $(document).ready(function () {
-            // Mensajes de alerta
-            setTimeout(function () {
-                $('.alert').fadeOut('slow');
-            }, 3000);
 
-            // Confirmación para eliminar
-            $('.btn-outline-danger').on('click', function (e) {
-                if (!confirm('¿Está seguro de eliminar esta persona?')) {
-                    e.preventDefault();
-                }
+        function filtrar() {
+
+            let nombre = $("#filtroNombre").val().toLowerCase();
+            let run = $("#filtroRun").val().toLowerCase();
+            let email = $("#filtroEmail").val().toLowerCase();
+            let estado = $("#filtroEstado").val().toLowerCase();
+
+            let total = 0;
+
+            $(".persona-row").each(function () {
+
+                let fila = $(this);
+
+                let n = fila.find("td:eq(1)").text().toLowerCase();
+                let a = fila.find("td:eq(2)").text().toLowerCase();
+                let r = fila.find("td:eq(3)").text().toLowerCase();
+                let e = fila.find("td:eq(5)").text().toLowerCase();
+                let est = fila.find("td:eq(6)").text().toLowerCase();
+
+                let ok = (n.includes(nombre) || a.includes(nombre)) &&
+                    r.includes(run) &&
+                    e.includes(email) &&
+                    (estado == "" || est.includes(estado));
+
+                fila.toggle(ok);
+
+                if (ok) total++;
+
             });
-        });
+
+            $("#contador").text(total);
+
+        }
+
+        $("#filtroNombre,#filtroRun,#filtroEmail").on("keyup", filtrar);
+        $("#filtroEstado").on("change", filtrar);
+
     </script>
+
 </body>
 
 </html>
