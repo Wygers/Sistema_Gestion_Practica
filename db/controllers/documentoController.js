@@ -1,25 +1,21 @@
 require('dotenv').config();
-const Conexion = require('../conexion');
-const db = new Conexion();
+const db = require('../conexion'); // Ya es una instancia, no necesita "new"
 
 /* ===============================
    HELPERS
 ================================ */
-
 const daysBetween = d => Math.ceil((new Date(d) - new Date()) / 86400000);
-const logError = (tag, err) => console.error(`❌ ${tag}`, err);
+const logError = (tag, err) => console.error(` ${tag}`, err.message || err);
 
 /* ===============================
    CONTROLLER
 ================================ */
-
 const documentosController = {
 
     /* ---------- API VEHICULOS (PARA SELECT) ---------- */
-
     apiVehiculos: async (req, res) => {
         try {
-            const [vehiculos] = await db.pool.execute(`
+            const [vehiculos] = await db.execute(`
                 SELECT 
                     v.id_vehiculo, 
                     v.patente, 
@@ -59,12 +55,11 @@ const documentosController = {
     },
 
     /* ---------- BUSCAR VEHICULO POR ID ---------- */
-
     buscarVehiculoPorID: async (req, res) => {
         try {
             const { id } = req.params;
 
-            const [[vehiculo]] = await db.pool.execute(`
+            const [[vehiculo]] = await db.execute(`
                 SELECT 
                     v.id_vehiculo,
                     v.patente,
@@ -104,13 +99,57 @@ const documentosController = {
         }
     },
 
-    /* ---------- VERIFICAR EXISTENCIA DE VEHICULO ---------- */
+    /* ---------- BUSCAR VEHICULO POR PATENTE ---------- */
+    buscarVehiculoPorPatente: async (req, res) => {
+        try {
+            const { patente } = req.params;
 
+            const [[vehiculo]] = await db.execute(`
+                SELECT 
+                    v.id_vehiculo,
+                    v.patente,
+                    v.marca,
+                    v.modelo,
+                    v.anio,
+                    v.color,
+                    v.capacidad,
+                    v.numero_chasis,
+                    v.numero_motor,
+                    v.activo,
+                    c.nombre_cliente,
+                    c.rut_cliente
+                FROM vehiculos v
+                LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
+                WHERE v.patente = ?
+            `, [patente]);
+
+            if (!vehiculo) {
+                return res.json({
+                    success: false,
+                    message: 'Vehículo no encontrado'
+                });
+            }
+
+            res.json({
+                success: true,
+                vehiculo
+            });
+
+        } catch (err) {
+            logError('BUSCAR VEHICULO POR PATENTE', err);
+            res.status(500).json({
+                success: false,
+                error: 'Error al buscar vehículo por patente'
+            });
+        }
+    },
+
+    /* ---------- VERIFICAR EXISTENCIA DE VEHICULO ---------- */
     verificarVehiculo: async (req, res) => {
         try {
             const { id } = req.params;
 
-            const [[vehiculo]] = await db.pool.execute(`
+            const [[vehiculo]] = await db.execute(`
                 SELECT id_vehiculo, patente, activo 
                 FROM vehiculos 
                 WHERE id_vehiculo = ?
@@ -144,10 +183,9 @@ const documentosController = {
     },
 
     /* ---------- API TIPOS DE DOCUMENTO ---------- */
-
     apiTipos: async (req, res) => {
         try {
-            const [tipos] = await db.pool.execute(`
+            const [tipos] = await db.execute(`
                 SELECT * FROM tipos_documento_veh 
                 WHERE activo = 1
                 ORDER BY nombre
@@ -168,11 +206,10 @@ const documentosController = {
     },
 
     /* ---------- DASHBOARD PRINCIPAL ---------- */
-
     mostrarDocumentos: async (req, res) => {
         try {
             // 1. Obtener vehículos para el modal
-            const [vehiculos] = await db.pool.execute(`
+            const [vehiculos] = await db.execute(`
                 SELECT 
                     v.id_vehiculo,
                     v.patente,
@@ -188,14 +225,14 @@ const documentosController = {
             `);
 
             // 2. Obtener tipos de documento
-            const [tiposDocumentos] = await db.pool.execute(`
+            const [tiposDocumentos] = await db.execute(`
                 SELECT * FROM tipos_documento_veh 
                 WHERE activo = 1
                 ORDER BY nombre
             `);
 
             // 3. Obtener documentos con JOIN
-            const [documentos] = await db.pool.execute(`
+            const [documentos] = await db.execute(`
                 SELECT 
                     dv.*,
                     v.patente,
@@ -228,7 +265,7 @@ const documentosController = {
 
             res.render('documentos', {
                 title: 'Gestión Documental',
-                vehiculos, // ¡IMPORTANTE! Pasar los vehículos aquí
+                vehiculos,
                 tiposDocumentos,
                 documentos: documentosConEstado,
                 documentosProximos,
@@ -246,7 +283,7 @@ const documentosController = {
 
             res.render('documentos', {
                 title: 'Gestión Documental',
-                vehiculos: [], // Pasar array vacío si hay error
+                vehiculos: [],
                 tiposDocumentos: [],
                 documentos: [],
                 documentosProximos: [],
@@ -261,11 +298,14 @@ const documentosController = {
     },
 
     /* ---------- CREAR DOCUMENTO ---------- */
-
     agregarDocumento: async (req, res) => {
-        const conn = await db.pool.getConnection();
-
+        let conn;
         try {
+            // Necesitamos una conexión para transacción
+            conn = await db.pool.promise().getConnection();
+
+            await conn.beginTransaction();
+
             // Obtener id_vehiculo del campo correcto según la selección
             const id_vehiculo = req.body.id_vehiculo || req.body.id_vehiculo_final;
             const {
@@ -295,8 +335,6 @@ const documentosController = {
 
             // Procesar archivo si existe
             const ruta_archivo = req.file ? `/uploads/documentos/${req.file.filename}` : null;
-
-            await conn.beginTransaction();
 
             await conn.execute(`
                 INSERT INTO documentos_vehiculares (
@@ -328,7 +366,7 @@ const documentosController = {
             res.redirect('/documentos?success=Documento registrado exitosamente');
 
         } catch (err) {
-            await conn.rollback();
+            if (conn) await conn.rollback();
             logError('AGREGAR DOCUMENTO', err);
 
             let errorMsg = 'Error al guardar el documento';
@@ -340,17 +378,16 @@ const documentosController = {
 
             res.redirect(`/documentos?error=${encodeURIComponent(errorMsg)}`);
         } finally {
-            conn.release();
+            if (conn) conn.release();
         }
     },
 
     /* ---------- OBTENER DETALLE DOCUMENTO ---------- */
-
     obtenerDetalle: async (req, res) => {
         try {
             const { id } = req.params;
 
-            const [[documento]] = await db.pool.execute(`
+            const [[documento]] = await db.execute(`
                 SELECT 
                     dv.*,
                     v.patente,
@@ -384,7 +421,6 @@ const documentosController = {
     },
 
     /* ---------- CREAR TIPO DE DOCUMENTO ---------- */
-
     crearTipoDocumento: async (req, res) => {
         try {
             const { nombre, descripcion, dias_alerta } = req.body;
@@ -393,7 +429,7 @@ const documentosController = {
                 return res.redirect('/documentos?error=El nombre del tipo es obligatorio');
             }
 
-            await db.pool.execute(`
+            await db.execute(`
                 INSERT INTO tipos_documento_veh (nombre, descripcion, dias_alerta, activo)
                 VALUES (?, ?, ?, 1)
             `, [nombre, descripcion || null, dias_alerta || 30]);
@@ -407,10 +443,8 @@ const documentosController = {
     },
 
     /* ---------- EDITAR DOCUMENTO ---------- */
-
     editarDocumento: async (req, res) => {
-        const conn = await db.pool.getConnection();
-
+        let conn;
         try {
             const { id } = req.params;
             const {
@@ -429,12 +463,13 @@ const documentosController = {
             if (req.file) {
                 ruta_archivo = `/uploads/documentos/${req.file.filename}`;
                 // Si hay un archivo nuevo, actualizamos la ruta
-                await conn.execute(
+                await db.execute(
                     'UPDATE documentos_vehiculares SET ruta_archivo = ? WHERE id_documento_veh = ?',
                     [ruta_archivo, id]
                 );
             }
 
+            conn = await db.pool.promise().getConnection();
             await conn.beginTransaction();
 
             await conn.execute(`
@@ -465,21 +500,20 @@ const documentosController = {
             res.redirect('/documentos?success=Documento actualizado exitosamente');
 
         } catch (err) {
-            await conn.rollback();
+            if (conn) await conn.rollback();
             logError('EDITAR DOCUMENTO', err);
             res.redirect('/documentos?error=Error al actualizar documento');
         } finally {
-            conn.release();
+            if (conn) conn.release();
         }
     },
 
     /* ---------- ELIMINAR DOCUMENTO ---------- */
-
     eliminarDocumento: async (req, res) => {
         try {
             const { id } = req.params;
 
-            await db.pool.execute(
+            await db.execute(
                 'DELETE FROM documentos_vehiculares WHERE id_documento_veh = ?',
                 [id]
             );
@@ -493,10 +527,9 @@ const documentosController = {
     },
 
     /* ---------- LISTAR DOCUMENTOS POR VEHICULO ---------- */
-
     listarDocumentosPorVehiculo: async (req, res) => {
         try {
-            const [vehiculosConDocumentos] = await db.pool.execute(`
+            const [vehiculosConDocumentos] = await db.execute(`
                 SELECT 
                     v.id_vehiculo,
                     v.patente,
@@ -525,12 +558,11 @@ const documentosController = {
     },
 
     /* ---------- DOCUMENTOS DE VEHICULO ESPECIFICO ---------- */
-
     documentosPorVehiculo: async (req, res) => {
         try {
             const { id } = req.params;
 
-            const [[vehiculo]] = await db.pool.execute(`
+            const [[vehiculo]] = await db.execute(`
                 SELECT * FROM vehiculos WHERE id_vehiculo = ?
             `, [id]);
 
@@ -538,7 +570,7 @@ const documentosController = {
                 return res.redirect('/documentos?error=Vehículo no encontrado');
             }
 
-            const [documentos] = await db.pool.execute(`
+            const [documentos] = await db.execute(`
                 SELECT 
                     dv.*,
                     td.nombre as tipo_documento
@@ -575,14 +607,12 @@ const documentosController = {
     },
 
     /* ---------- ENVIAR RECORDATORIO ---------- */
-
     enviarRecordatorio: async (req, res) => {
         try {
             const { id } = req.params;
 
             // Aquí implementarías la lógica para enviar correo
             // Por ahora solo simulamos el envío
-
             console.log(`Enviando recordatorio para documento ID: ${id}`);
 
             res.redirect('/documentos?success=Recordatorio enviado exitosamente');
@@ -594,14 +624,12 @@ const documentosController = {
     },
 
     /* ---------- GENERAR REPORTE ---------- */
-
     generarReporte: async (req, res) => {
         try {
             const { tipo } = req.params;
 
             // Aquí implementarías la lógica para generar PDF/Excel
             // Por ahora solo simulamos la generación
-
             console.log(`Generando reporte tipo: ${tipo}`);
 
             res.redirect('/documentos?success=Reporte generado exitosamente');
@@ -611,8 +639,6 @@ const documentosController = {
             res.redirect('/documentos?error=Error al generar reporte');
         }
     }
-
-    
 
 };
 

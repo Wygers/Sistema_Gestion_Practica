@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        <%= title || 'Crear Grupo' %>
+    </title>
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="/css/Index.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-diagram-3-fill me-2"></i>Gestión Documental
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/grupos">Grupos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/personas">Personas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/vehiculos">Vehículos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/logout">Salir</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido -->
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+                <div class="card shadow">
+                    <div class="card-header bg-primary-custom text-white py-3">
+                        <h4 class="mb-0">
+                            <i class="bi bi-folder-plus me-2"></i>Crear Nuevo Grupo
+                        </h4>
+                    </div>
+
+                    <div class="card-body">
+
+                        <!-- Mensajes -->
+                        <% if (success) { %>
+                            <div class="alert alert-success alert-dismissible fade show">
+                                <i class="bi bi-check-circle me-2"></i>
+                                <%= success %>
+                                    <button class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            <% } %>
+
+                                <% if (error) { %>
+                                    <div class="alert alert-danger alert-dismissible fade show">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <%= error %>
+                                            <button class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                    <% } %>
+
+                                        <!-- Formulario -->
+                                        <form method="POST" action="/grupos/crear" id="formCrearGrupo">
+                                            <div class="row">
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label required-field">Nombre del Grupo</label>
+                                                    <input type="text" name="nombre_grupo" class="form-control"
+                                                        placeholder="Ej: Manuel Zepeda Araya - SAMTECH"
+                                                        value="<%= datosFormulario?.nombre_grupo || '' %>" required>
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Nombre de la Compañía</label>
+                                                    <input type="text" name="nombre_compania" class="form-control"
+                                                        placeholder="Ej: SAMTECH SpA"
+                                                        value="<%= datosFormulario?.nombre_compania || '' %>">
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Nombre de Contacto</label>
+                                                    <input type="text" name="nombre_contacto" class="form-control"
+                                                        placeholder="Ej: Manuel Zepeda"
+                                                        value="<%= datosFormulario?.nombre_contacto || '' %>">
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label">Email de Contacto</label>
+                                                    <input type="email" name="email_contacto" class="form-control"
+                                                        placeholder="contacto@empresa.cl"
+                                                        value="<%= datosFormulario?.email_contacto || '' %>">
+                                                </div>
+
+                                                <div class="col-md-8 mb-3">
+                                                    <label class="form-label">Dirección</label>
+                                                    <input type="text" name="direccion" class="form-control"
+                                                        placeholder="Ej: Av. Balmaceda 1234"
+                                                        value="<%= datosFormulario?.direccion || '' %>">
+                                                </div>
+
+                                                <div class="col-md-4 mb-3">
+                                                    <label class="form-label">Ciudad</label>
+                                                    <input type="text" name="ciudad" class="form-control"
+                                                        placeholder="Ej: Calama"
+                                                        value="<%= datosFormulario?.ciudad || '' %>">
+                                                </div>
+
+                                            </div>
+
+                                            <!-- Botones -->
+                                            <div class="d-flex justify-content-between mt-4">
+                                                <a href="/grupos" class="btn btn-secondary">
+                                                    <i class="bi bi-arrow-left me-2"></i>Volver
+                                                </a>
+
+                                                <button type="submit" class="btn btn-primary-custom" id="btnSubmit">
+                                                    <i class="bi bi-save me-2"></i>Guardar Grupo
+                                                </button>
+                                            </div>
+                                        </form>
+                    </div>
+                </div>
+                <!-- Info -->
+                <div class="card mt-3 border-info">
+                    <div class="card-body">
+                        <h6 class="text-info">
+                            <i class="bi bi-info-circle me-2"></i>Información
+                        </h6>
+                        <ul class="small mb-0">
+                            <li>Los grupos permiten organizar personas y vehículos</li>
+                            <li>Un usuario solo verá los grupos asociados a su cuenta</li>
+                            <li>El administrador puede ver todos los grupos</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <footer class="bg-primary-custom text-white text-center mt-5 py-4">
+        <div class="container">
+            <p class="mb-1">&copy; <%= new Date().getFullYear() %> Sistema de Gestión</p>
+            <small>Control • Alertas • Seguridad</small>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('formCrearGrupo');
+            const btn = document.getElementById('btnSubmit');
+
+            form.addEventListener('submit', e => {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Procesando...';
+
+                const nombre = form.nombre_grupo.value.trim();
+                if (nombre.length < 3) {
+                    e.preventDefault();
+                    alert('El nombre del grupo debe tener al menos 3 caracteres');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-save me-2"></i>Guardar Grupo';
+                }
+            });
+            // Focus automático
+            form.nombre_grupo.focus();
+        });
+    </script>
+</body>
+
+</html>

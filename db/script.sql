@@ -13,7 +13,6 @@ CREATE TABLE clientes (
     activo BOOLEAN DEFAULT TRUE
 );
 
-
 CREATE TABLE usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT NOT NULL,
@@ -47,6 +46,19 @@ CREATE TABLE personas (
     UNIQUE KEY idx_run_cliente (id_cliente, run, dv)
 );
 
+CREATE TABLE grupos (
+  id_grupo INT AUTO_INCREMENT PRIMARY KEY,
+  id_cliente INT NOT NULL,
+  nombre_grupo VARCHAR(100) NOT NULL,
+  nombre_compania VARCHAR(150),
+  nombre_contacto VARCHAR(100),
+  email_contacto VARCHAR(100),
+  direccion VARCHAR(200),
+  ciudad VARCHAR(100),
+  activo BOOLEAN DEFAULT TRUE,
+  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
+);
 
 CREATE TABLE tipo_documentos_persona (
     id_tipo_documento INT AUTO_INCREMENT PRIMARY KEY,
@@ -80,13 +92,11 @@ CREATE TABLE documentos_persona (
     FOREIGN KEY (usuario_subida) REFERENCES usuarios(id_usuario)
 );
 
-
 CREATE TABLE tipos_vehiculo (
     id_tipo_vehiculo INT AUTO_INCREMENT PRIMARY KEY,
     nombre_tipo VARCHAR(50) NOT NULL,
     descripcion TEXT
 );
-
 
 CREATE TABLE vehiculos (
     id_vehiculo INT AUTO_INCREMENT PRIMARY KEY,
@@ -108,7 +118,6 @@ CREATE TABLE vehiculos (
     UNIQUE KEY idx_patente_cliente (id_cliente, patente)
 );
 
-
 CREATE TABLE tipo_documentos_vehiculo (
     id_tipo_documento_veh INT AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT NOT NULL,
@@ -121,7 +130,6 @@ CREATE TABLE tipo_documentos_vehiculo (
     FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),
     UNIQUE KEY idx_tipo_doc_veh_cliente (id_cliente, nombre_documento)
 );
-
 
 CREATE TABLE documentos_vehiculo (
     id_documento_veh INT AUTO_INCREMENT PRIMARY KEY,
@@ -156,7 +164,6 @@ CREATE TABLE alertas (
     leido BOOLEAN DEFAULT FALSE
 );
 
-
 CREATE TABLE config_alertas_cliente (
     id_config INT AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT NOT NULL,
@@ -169,22 +176,6 @@ CREATE TABLE config_alertas_cliente (
     FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),
     UNIQUE KEY idx_cliente_entidad (id_cliente, tipo_entidad)
 );
-
-
-CREATE TABLE historial_cambios (
-    id_log INT AUTO_INCREMENT PRIMARY KEY,
-    tabla_afectada VARCHAR(50) NOT NULL,
-    id_registro INT NOT NULL,
-    tipo_operacion ENUM('INSERT', 'UPDATE', 'DELETE') NOT NULL,
-    datos_anteriores JSON,
-    datos_nuevos JSON,
-    id_usuario INT,
-    fecha_cambio DATETIME DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
-);
-
 
 CREATE TABLE persona_vehiculo (
     id_relacion INT AUTO_INCREMENT PRIMARY KEY,

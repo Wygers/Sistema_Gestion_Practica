@@ -4,9 +4,6 @@ const documentosController = require('../db/controllers/documentoController');
 const multer = require('multer');
 const path = require('path');
 
-/* ===============================
-   CONFIGURACIÓN MULTER
-================================ */
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -48,10 +45,6 @@ const upload = multer({
         }
     }
 });
-
-/* ===============================
-   API ENDPOINTS (para cargar selects y búsquedas)
-================================ */
 
 // API para obtener lista de vehículos (para el select)
 router.get('/api/vehiculos', documentosController.apiVehiculos);
@@ -109,10 +102,6 @@ router.post('/recordatorio/:id', documentosController.enviarRecordatorio);
 // Generar reporte PDF
 router.get('/reporte/:tipo', documentosController.generarReporte);
 
-/* ===============================
-   MANEJO DE ERRORES MULTER
-================================ */
-
 router.use((err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
@@ -131,10 +120,6 @@ router.use((err, req, res, next) => {
     }
     next();
 });
-
-/* ===============================
-   MANEJO DE ERRORES GENERALES
-================================ */
 
 router.use((err, req, res, next) => {
     console.error('Error general:', err.stack);

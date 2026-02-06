@@ -35,6 +35,7 @@ app.use((req, res, next) => {
     next();
 });
 
+
 // Archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -48,9 +49,9 @@ try {
     // Rutas de vehículos
     const vehiculosRoutes = require('./routes/vehiculos.routes');
     app.use('/vehiculos', vehiculosRoutes);
-    console.log('✓ Rutas de vehículos cargadas');
+    console.log(' Rutas de vehículos cargadas');
 } catch (error) {
-    console.error('✗ Error al cargar rutas de vehículos:', error.message);
+    console.error(' Error al cargar rutas de vehículos:', error.message);
     // Crear ruta básica si el archivo no existe
     app.use('/vehiculos', (req, res) => {
         res.status(404).send('Módulo de vehículos no disponible');
@@ -61,21 +62,21 @@ try {
     // Rutas de personas
     const personasRoutes = require('./routes/personas.routes');
     app.use('/personas', personasRoutes);
-    console.log('✓ Rutas de personas cargadas');
+    console.log(' Rutas de personas cargadas');
 } catch (error) {
-    console.error('✗ Error al cargar rutas de personas:', error.message);
+    console.error(' Error al cargar rutas de personas:', error.message);
     app.use('/personas', (req, res) => {
         res.status(404).send('Módulo de personas no disponible');
     });
 }
 
 try {
-    // RUTAS DE DOCUMENTOS
+
     const documentosRoutes = require('./routes/documentos.routes');
     app.use('/documentos', documentosRoutes);
-    console.log('✓ Rutas de documentos cargadas');
+    console.log(' Rutas de documentos cargadas');
 } catch (error) {
-    console.error('✗ Error al cargar rutas de documentos:', error.message);
+    console.error(' Error al cargar rutas de documentos:', error.message);
     // Ruta temporal de documentos
     app.use('/documentos', (req, res) => {
         res.render('documentos', {
@@ -93,7 +94,6 @@ try {
     });
 }
 
-// RUTA API PARA OBTENER VEHÍCULOS (AGREGADA AQUÍ)
 app.get('/api/vehiculos', async (req, res) => {
     try {
         const [vehiculos] = await db.query(`
