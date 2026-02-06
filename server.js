@@ -77,7 +77,7 @@ try {
     console.log(' Rutas de documentos cargadas');
 } catch (error) {
     console.error(' Error al cargar rutas de documentos:', error.message);
-    // Ruta temporal de documentos
+
     app.use('/documentos', (req, res) => {
         res.render('documentos', {
             title: 'Gestión Documental',
@@ -125,7 +125,7 @@ app.get('/api/vehiculos', async (req, res) => {
     }
 });
 
-// También puedes agregar esta ruta dentro de documentos si prefieres
+
 app.get('/documentos/api/vehiculos', async (req, res) => {
     try {
         const [vehiculos] = await db.query(`
@@ -206,6 +206,16 @@ app.get('/', async (req, res) => {
     }
 });
 
+app.get('/grupos/crear', (req, res) => {
+    res.render('AgregarGrupo', {
+        title: 'Crear Nuevo Grupo',
+        fecha: new Date()
+        
+    });
+});
+
+
+
 app.get('/login', (req, res) => {
     res.render('Login', { title: 'Iniciar Sesión' });
 });
@@ -246,22 +256,6 @@ app.get('/documentos/simple', async (req, res) => {
     }
 });
 
-// Ruta 404 para manejar errores
-app.use((req, res) => {
-    res.status(404).render('error', {
-        title: 'Página no encontrada',
-        message: 'La página que buscas no existe'
-    });
-});
-
-// Manejo de errores global
-app.use((err, req, res, next) => {
-    console.error('Error global:', err.stack);
-    res.status(500).render('error', {
-        title: 'Error del servidor',
-        message: 'Algo salió mal en el servidor'
-    });
-});
 
 // Iniciar servidor
 app.listen(PORT, () => {

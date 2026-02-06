@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        Gestión de Grupos
+    </title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary-custom: #0d6efd;
+            --secondary-custom: #6c757d;
+            --success-custom: #198754;
+            --warning-custom: #ffc107;
+            --danger-custom: #dc3545;
+            --purple-custom: #6f42c1;
+            --teal-custom: #20c997;
+            --indigo-custom: #6610f2;
+        }
+
+        .bg-primary-custom {
+            background-color: var(--primary-custom) !important;
+        }
+
+        .bg-purple-custom {
+            background-color: var(--purple-custom) !important;
+        }
+
+        .btn-primary-custom {
+            background-color: var(--primary-custom);
+            border-color: var(--primary-custom);
+            color: white;
+        }
+
+        .btn-primary-custom:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
+
+        .btn-purple-custom {
+            background-color: var(--purple-custom);
+            border-color: var(--purple-custom);
+            color: white;
+        }
+
+        .btn-purple-custom:hover {
+            background-color: #5a32a3;
+            border-color: #522d95;
+        }
+
+        .group-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .group-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .badge-active {
+            background-color: var(--success-custom);
+            color: white;
+        }
+
+        .badge-inactive {
+            background-color: var(--secondary-custom);
+            color: white;
+        }
+
+        .badge-operativo {
+            background-color: var(--primary-custom);
+            color: white;
+        }
+
+        .badge-administrativo {
+            background-color: var(--indigo-custom);
+            color: white;
+        }
+
+        .badge-comercial {
+            background-color: var(--teal-custom);
+            color: white;
+        }
+
+        .badge-logistica {
+            background-color: var(--warning-custom);
+            color: #000;
+        }
+
+        .action-buttons .btn {
+            margin: 2px;
+            min-width: 40px;
+        }
+
+        .table-responsive {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .card-header-custom {
+            background: linear-gradient(135deg, var(--purple-custom) 0%, #5a32a3 100%);
+            color: white;
+            border-bottom: none;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-active {
+            background-color: var(--success-custom);
+        }
+
+        .status-inactive {
+            background-color: var(--secondary-custom);
+        }
+
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-left: -8px;
+        }
+
+        .member-avatar:first-child {
+            margin-left: 0;
+        }
+
+        .avatar-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .more-members {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--secondary-custom);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            margin-left: -8px;
+            border: 2px solid #fff;
+        }
+
+        .group-color-badge {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-right: 5px;
+            border: 1px solid #dee2e6;
+        }
+
+        .table-group tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .group-icon-cell {
+            width: 40px;
+            text-align: center;
+        }
+
+        .group-icon {
+            font-size: 1.2rem;
+            color: var(--purple-custom);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-people-fill me-2"></i>Gestión Vehicular
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarVehicular">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarVehicular">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Inicio</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownPersonas" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-people me-1"></i>Personas
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdownPersonas">
+                            <li><a class="dropdown-item" href="/personas/agregar">
+                                    <i class="bi bi-person-plus me-2"></i>Agregar Persona
+                                </a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="/personas">
+                                    <i class="bi bi-list-ul me-2"></i>Listar Personas
+                                </a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownVehiculos" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-truck me-1"></i>Vehículos
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdownVehiculos">
+                            <li><a class="dropdown-item" href="/vehiculos/agregar">
+                                    <i class="bi bi-plus-circle me-2"></i>Agregar Vehículo
+                                </a></li>
+                            <li><a class="dropdown-item" href="/vehiculos">
+                                    <i class="bi bi-list-ul me-2"></i>Listar Vehículos
+                                </a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/documentos">
+                            <i class="bi bi-file-earmark-text me-1"></i>Documentos
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/grupos">
+                            <i class="bi bi-people-fill me-1"></i>Grupos
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reportes">
+                            <i class="bi bi-graph-up me-1"></i>Reportes
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mt-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="text-primary-custom mb-2">
+                    <i class="bi bi-people-fill me-2"></i>Gestión de Grupos
+                </h1>
+                <p class="text-muted">
+                    Organización y administración de grupos de usuarios y vehículos
+                </p>
+            </div>
+            <div>
+                <button class="btn btn-purple-custom" onclick="window.location.href='/grupos/crear'">
+                    <i class="bi bi-plus-circle me-1"></i>Nuevo Grupo
+                </button>
+            </div>
+        </div>
+
+        <!-- Mensajes Flash -->
+        <div id="flashMessages"></div>
+
+        <!-- Lista de Grupos -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-people me-2"></i>Lista de Grupos
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="gruposContainer">
+                    <!-- Los grupos se cargarán aquí dinámicamente -->
+                    <div class="text-center py-5">
+                        <i class="bi bi-people text-muted" style="font-size: 4rem;"></i>
+                        <h4 class="mt-3 text-muted">No hay grupos creados</h4>
+                        <p class="text-muted">Organiza tus vehículos y usuarios en grupos para una mejor gestión</p>
+                        <button class="btn btn-purple-custom" onclick="window.location.href='/grupos/crear'">
+                            <i class="bi bi-plus-circle me-1"></i>Crear Primer Grupo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Reporte Grupos -->
+    <div class="modal fade" id="modalReporteGrupos" tabindex="-1" aria-labelledby="modalReporteGruposLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="modalReporteGruposLabel">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Generar Reporte de Grupos
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Reporte</label>
+                        <select class="form-select" id="tipoReporteGrupos">
+                            <option value="todos">Todos los grupos</option>
+                            <option value="activos">Grupos activos</option>
+                            <option value="detallado">Detallado con miembros</option>
+                            <option value="vehiculos">Por vehículos asignados</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Formato</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="formatoReporteGrupos"
+                                id="formatoPDFGrupos" value="pdf" checked>
+                            <label class="form-check-label" for="formatoPDFGrupos">
+                                <i class="bi bi-file-earmark-pdf text-danger"></i> PDF
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="formatoReporteGrupos"
+                                id="formatoExcelGrupos" value="excel">
+                            <label class="form-check-label" for="formatoExcelGrupos">
+                                <i class="bi bi-file-earmark-excel text-success"></i> Excel
+                            </label>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        El reporte incluirá información detallada de grupos, miembros y vehículos asignados.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="generarReporteGrupos()">
+                        <i class="bi bi-download me-1"></i>Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-primary-custom text-center text-white mt-5 py-4">
+        <div class="container">
+            <p class="mb-1">
+                &copy; <span id="currentYear"></span> Sistema de Gestión Vehicular
+            </p>
+            <p class="small mb-0">
+                <i class="bi bi-calendar-check me-1"></i>Fecha del servidor:
+                <span id="fechaServidor">
+                    Cargando...
+                </span>
+            </p>
+            <small>
+                <i class="bi bi-shield-check me-1"></i>Control • Organización • Colaboración
+            </small>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Configurar año actual
+            $('#currentYear').text(new Date().getFullYear());
+
+            // Actualizar fecha del servidor
+            actualizarFechaServidor();
+
+            // Cargar datos iniciales
+            cargarDatosGrupos();
+
+            // Configurar DataTable después de cargar datos
+            setTimeout(() => {
+                if ($('#tablaGrupos').length) {
+                    $('#tablaGrupos').DataTable({
+                        language: {
+                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+                        },
+                        pageLength: 10,
+                        responsive: true,
+                        order: [[1, 'asc']],
+                        columnDefs: [
+                            { orderable: false, targets: [0, 7] }
+                        ]
+                    });
+                }
+            }, 1000);
+        });
+
+        function actualizarFechaServidor() {
+            const now = new Date();
+            const options = {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            $('#fechaServidor').text(now.toLocaleString('es-ES', options));
+        }
+
+        function cargarDatosGrupos() {
+            // Hacer petición AJAX para obtener datos de la base de datos
+            fetch('/api/grupos')
+                .then(response => response.json())
+                .then(datos => {
+                    renderizarGrupos(datos);
+                })
+                .catch(error => {
+                    console.error('Error al cargar grupos:', error);
+                    mostrarMensajeError('Error al cargar los grupos');
+                });
+        }
+
+        function renderizarGrupos(grupos) {
+            if (!grupos || grupos.length === 0) {
+                // Mantener el mensaje "No hay grupos creados"
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table id="tablaGrupos" class="table table-hover table-group">
+                        <thead>
+                            <tr>
+                                <th class="group-icon-cell"></th>
+                                <th>Nombre del Grupo</th>
+                                <th>Compañía</th>
+                                <th>Contacto</th>
+                                <th>Email</th>
+                                <th>Ubicación</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // Colores para los avatares
+            const avatarColors = ['#6f42c1', '#0d6efd', '#198754', '#ffc107', '#dc3545'];
+
+            grupos.forEach(grupo => {
+                // Obtener iniciales del contacto
+                let inicialesContacto = 'NA';
+                if (grupo.nombre_contacto) {
+                    const nombres = grupo.nombre_contacto.split(' ');
+                    inicialesContacto = (nombres[0]?.charAt(0) || '') + (nombres[1]?.charAt(0) || '');
+                }
+
+                html += `
+                    <tr>
+                        <td class="group-icon-cell">
+                            <i class="bi bi-collection group-icon"></i>
+                        </td>
+                        <td>
+                            <div class="fw-bold">
+                                ${grupo.nombre_grupo}
+                            </div>
+                            <small class="text-muted">
+                                ID: ${grupo.id_grupo}
+                            </small>
+                        </td>
+                        <td>
+                            ${grupo.nombre_compania || 'Sin compañía'}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-info text-white d-flex align-items-center justify-content-center me-2" 
+                                     style="width: 28px; height: 28px; font-size: 0.7rem;">
+                                    ${inicialesContacto}
+                                </div>
+                                <span>${grupo.nombre_contacto || 'No asignado'}</span>
+                            </div>
+                        </td>
+                        <td>
+                            ${grupo.email_contacto ?
+                        `<a href="mailto:${grupo.email_contacto}" class="text-decoration-none">
+                                    <i class="bi bi-envelope me-1"></i>${grupo.email_contacto}
+                                </a>` :
+                        'No tiene email'}
+                        </td>
+                        <td>
+                            <small>
+                                ${grupo.direccion ? grupo.direccion + ', ' : ''}
+                                ${grupo.ciudad || ''}
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge ${grupo.activo ? 'badge-active' : 'badge-inactive'}">
+                                <span class="status-indicator status-${grupo.activo ? 'active' : 'inactive'}"></span>
+                                ${grupo.activo ? 'Activo' : 'Inactivo'}
+                            </span>
+                        </td>
+                        <td class="action-buttons">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" 
+                                        onclick="verDetalleGrupo(${grupo.id_grupo})"
+                                        title="Ver detalle">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-warning" 
+                                        onclick="editarGrupo(${grupo.id_grupo})"
+                                        title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-info" 
+                                        onclick="gestionarMiembros(${grupo.id_grupo})"
+                                        title="Gestionar miembros">
+                                    <i class="bi bi-person-plus"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#gruposContainer').html(html);
+        }
+
+        function mostrarMensajeError(mensaje) {
+            const flashMessages = $('#flashMessages');
+            flashMessages.html(`
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    ${mensaje}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `);
+        }
+
+        // FUNCIONES GLOBALES
+        function verDetalleGrupo(id) {
+            window.location.href = '/grupos/detalle/' + id;
+        }
+
+        function editarGrupo(id) {
+            window.location.href = '/grupos/editar/' + id;
+        }
+
+        function gestionarMiembros(id) {
+            window.location.href = '/grupos/miembros/' + id;
+        }
+
+        function exportarGrupos() {
+            // Obtener datos de la tabla actual
+            const table = $('#tablaGrupos').DataTable();
+            const data = table.rows().data();
+
+            // Convertir a CSV
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            // Encabezados
+            const headers = ["ID", "Nombre", "Compañía", "Contacto", "Email", "Dirección", "Ciudad", "Estado"];
+            csvContent += headers.join(",") + "\n";
+
+            // Datos
+            data.each(function (value) {
+                const row = [
+                    value[1]?.split('ID: ')[1] || '', // Extraer ID
+                    value[1]?.split('\n')[0] || '', // Nombre sin ID
+                    value[2] || '',
+                    value[3]?.split('>')[2]?.split('<')[0] || '', // Extraer nombre contacto
+                    value[4]?.split('>')[2]?.split('<')[0] || '', // Extraer email
+                    value[5]?.split(',')[0]?.trim() || '',
+                    value[5]?.split(',')[1]?.trim() || '',
+                    value[6]?.includes('Activo') ? 'Activo' : 'Inactivo'
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            // Descargar archivo
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "grupos_" + new Date().toISOString().split('T')[0] + ".csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function generarReporteGrupos() {
+            const tipo = $('#tipoReporteGrupos').val();
+            const formato = $('input[name="formatoReporteGrupos"]:checked').val();
+
+            // Redirigir al endpoint de reportes con los parámetros
+            window.location.href = `/api/reportes/grupos?tipo=${tipo}&formato=${formato}`;
+
+            // Cerrar modal
+            $('#modalReporteGrupos').modal('hide');
+        }
+    </script>
+</body>
+
+</html>
