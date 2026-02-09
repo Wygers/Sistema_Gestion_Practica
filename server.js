@@ -1,4 +1,4 @@
-// app.js (o index.js)
+// app.js
 require('dotenv').config();
 
 const express = require('express');
@@ -12,11 +12,12 @@ const PORT = process.env.PORT || 3000;
 // Base de datos
 const db = require('./db/conexion');
 
-// Middlewares
+// --- Middlewares ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Configuración de sesión (para flash messages)
+// Configuración de sesión
 app.use(session({
     secret: process.env.SESSION_SECRET || 'mi_secreto_vehicular',
     resave: false,
@@ -24,10 +25,9 @@ app.use(session({
     cookie: { secure: false }
 }));
 
-// Flash messages
 app.use(flash());
 
-// Middleware para variables globales
+// Middleware para variables globales (Flash y Usuario)
 app.use((req, res, next) => {
     res.locals.success_msg = req.flash('success');
     res.locals.error_msg = req.flash('error');
@@ -35,161 +35,43 @@ app.use((req, res, next) => {
     next();
 });
 
-
-// Archivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
-
 // Motor de vistas
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// --- Carga Dinámica de Rutas (Estructura protegida) ---
+const cargarRutas = (nombre, ruta, pathArchivo) => {
+    try {
+        const router = require(pathArchivo);
+        app.use(ruta, router);
+        console.log(`Rutas de ${nombre} cargadas`);
+    } catch (error) {
+        console.error(` Error al cargar rutas de ${nombre}:`, error.message);
+    }
+};
 
-// IMPORTANTE: Primero verifica que los archivos de rutas existan
-try {
-    // Rutas de vehículos
-    const vehiculosRoutes = require('./routes/vehiculos.routes');
-    app.use('/vehiculos', vehiculosRoutes);
-    console.log(' Rutas de vehículos cargadas');
-} catch (error) {
-    console.error(' Error al cargar rutas de vehículos:', error.message);
-    // Crear ruta básica si el archivo no existe
-    app.use('/vehiculos', (req, res) => {
-        res.status(404).send('Módulo de vehículos no disponible');
-    });
-}
+cargarRutas('Vehículos', '/vehiculos', './routes/vehiculos.routes');
+cargarRutas('Personas', '/personas', './routes/personas.routes');
+cargarRutas('Documentos', '/documentos', './routes/documentos.routes');
 
-try {
-    // Rutas de personas
-    const personasRoutes = require('./routes/personas.routes');
-    app.use('/personas', personasRoutes);
-    console.log(' Rutas de personas cargadas');
-} catch (error) {
-    console.error(' Error al cargar rutas de personas:', error.message);
-    app.use('/personas', (req, res) => {
-        res.status(404).send('Módulo de personas no disponible');
-    });
-}
-
-try {
-
-    const documentosRoutes = require('./routes/documentos.routes');
-    app.use('/documentos', documentosRoutes);
-    console.log(' Rutas de documentos cargadas');
-} catch (error) {
-    console.error(' Error al cargar rutas de documentos:', error.message);
-
-    app.use('/documentos', (req, res) => {
-        res.render('documentos', {
-            title: 'Gestión Documental',
-            fecha: new Date(),
-            totalDocumentos: 0,
-            documentosVigentes: 0,
-            documentosPorVencer: 0,
-            documentosVencidos: 0,
-            documentosProximos: [],
-            documentos: [],
-            vehiculos: [],
-            tiposDocumentos: []
-        });
-    });
-}
-
+// --- Endpoints de API (Consolidados) ---
 app.get('/api/vehiculos', async (req, res) => {
     try {
         const [vehiculos] = await db.query(`
-            SELECT 
-                v.id_vehiculo,
-                v.patente,
-                v.marca,
-                v.modelo,
-                v.anio,
-                v.color,
-                c.nombre_cliente
-            FROM vehiculos v
-            LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
-            WHERE v.activo = 1
-            ORDER BY v.patente ASC
+            SELECT v.id_vehiculo, v.patente, v.marca, v.modelo, c.nombre_cliente 
+            FROM vehiculos v 
+            LEFT JOIN clientes c ON v.id_cliente = c.id_cliente 
+            WHERE v.activo = 1 ORDER BY v.patente ASC
         `);
-
-        res.json({
-            success: true,
-            vehiculos: vehiculos
-        });
+        res.json({ success: true, vehiculos });
     } catch (error) {
-        console.error('Error al obtener vehículos API:', error);
-        res.json({
-            success: false,
-            error: 'Error al cargar vehículos',
-            message: error.message
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
+// --- Rutas de Vistas Principales ---
 
-app.get('/documentos/api/vehiculos', async (req, res) => {
-    try {
-        const [vehiculos] = await db.query(`
-            SELECT 
-                v.id_vehiculo,
-                v.patente,
-                v.marca,
-                v.modelo,
-                v.anio,
-                v.color,
-                c.nombre_cliente
-            FROM vehiculos v
-            LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
-            WHERE v.activo = 1
-            ORDER BY v.patente ASC
-        `);
-
-        res.json({
-            success: true,
-            vehiculos: vehiculos
-        });
-    } catch (error) {
-        console.error('Error al obtener vehículos API:', error);
-        res.json({
-            success: false,
-            error: 'Error al cargar vehículos',
-            message: error.message
-        });
-    }
-});
-
-// Agrega esto después de las otras rutas en app.js
-app.get('/api/vehiculos', async (req, res) => {
-    try {
-        const [vehiculos] = await db.query(`
-            SELECT 
-                v.id_vehiculo,
-                v.patente,
-                v.marca,
-                v.modelo,
-                v.anio,
-                v.color,
-                c.nombre_cliente
-            FROM vehiculos v
-            LEFT JOIN clientes c ON v.id_cliente = c.id_cliente
-            WHERE v.activo = 1
-            ORDER BY v.patente ASC
-        `);
-
-        res.json({
-            success: true,
-            vehiculos: vehiculos
-        });
-    } catch (error) {
-        console.error('Error en API /api/vehiculos:', error);
-        res.json({
-            success: false,
-            error: 'Error al cargar vehículos',
-            message: error.message
-        });
-    }
-});
-
-// Ruta principal
+// Home
 app.get('/', async (req, res) => {
     try {
         const [rows] = await db.query('SELECT NOW() AS fecha');
@@ -198,79 +80,88 @@ app.get('/', async (req, res) => {
             fecha: rows[0].fecha
         });
     } catch (error) {
-        console.error('Error en ruta principal:', error);
-        res.render('Home', {
-            title: 'Sistema de Gestión Vehicular',
-            fecha: new Date().toLocaleString()
-        });
+        res.render('Home', { title: 'Home', fecha: new Date() });
     }
 });
 
-app.get('/grupos/crear', (req, res) => {
-    res.render('AgregarGrupo', {
-        title: 'Crear Nuevo Grupo',
-        fecha: new Date()
-        
-    });
+// Listado de Grupos
+app.get('/grupos', async (req, res) => {
+    try {
+        // Obtenemos los grupos para la tabla principal
+        const [grupos] = await db.query(`
+            SELECT g.*, c.nombre_cliente 
+            FROM grupos g 
+            LEFT JOIN clientes c ON g.id_cliente = c.id_cliente
+        `);
+        res.render('Grupos', {
+            title: 'Gestión de Grupos',
+            fecha: new Date(),
+            grupos: grupos // Definimos grupos para la vista
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Error al cargar grupos');
+    }
 });
 
+// Crear Grupo (SOLUCIÓN AL ERROR DE REFERENCIA)
+app.get('/grupos/crear', async (req, res) => {
+    try {
+        // Necesitamos 'clientes' para el formulario y 'grupos' para los contadores si hereda el layout
+        const [clientes] = await db.query('SELECT id_cliente, nombre_cliente FROM clientes WHERE activo = 1');
+        const [grupos] = await db.query('SELECT * FROM grupos');
 
+        res.render('AgregarGrupo', {
+            title: 'Crear Nuevo Grupo',
+            fecha: new Date(),
+            clientes: clientes,
+            grupos: grupos // Se envía para evitar el ReferenceError: grupos is not defined
+        });
+    } catch (error) {
+        console.error(error);
+        req.flash('error', 'Error al preparar el formulario de grupos');
+        res.redirect('/grupos');
+    }
+});
 
 app.get('/login', (req, res) => {
     res.render('Login', { title: 'Iniciar Sesión' });
 });
 
-// Ruta de prueba de base de datos
+// --- Utilidades ---
 app.get('/tst-db', async (req, res) => {
     try {
         const [rows] = await db.query('SELECT 1+1 AS result');
-        res.json({
-            db: 'Conectado correctamente',
-            result: rows[0].result
-        });
+        res.json({ db: 'Conectado', result: rows[0].result });
     } catch (error) {
-        res.status(500).json({
-            error: 'Error en la base de datos',
-            message: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// Ruta para documentos simple (por si fallan las rutas)
-app.get('/documentos/simple', async (req, res) => {
+app.get('/grupos/crear', async (req, res) => {
     try {
-        res.render('documentos', {
-            title: 'Gestión Documental',
+        const [clientes] = await db.query('SELECT id_cliente, nombre FROM clientes WHERE activo = 1');
+        const [personas] = await db.query('SELECT id_persona, run, dv, nombres, apellido_paterno, apellido_materno, email FROM personas WHERE activo = 1');
+
+        res.render('AgregarGrupo', {
+            title: 'Crear Nuevo Grupo',
             fecha: new Date(),
-            totalDocumentos: 0,
-            documentosVigentes: 0,
-            documentosPorVencer: 0,
-            documentosVencidos: 0,
-            documentosProximos: [],
-            documentos: [],
-            vehiculos: [],
-            tiposDocumentos: []
+            clientes: clientes,
+            personas: personas 
         });
     } catch (error) {
-        res.status(500).send('Error al cargar documentos');
+        res.status(500).send('Error');
     }
 });
 
+// --- Manejo de errores 404 ---
+app.use((req, res) => {
+    res.status(404).send('Página no encontrada');
+});
 
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log('='.repeat(50));
-    console.log(`  Servidor corriendo en http://localhost:${PORT}`);
-    console.log('='.repeat(50));
-    console.log('   Rutas disponibles:');
-    console.log(`   • http://localhost:${PORT}/ (Inicio)`);
-    console.log(`   • http://localhost:${PORT}/personas (Personas)`);
-    console.log(`   • http://localhost:${PORT}/vehiculos (Vehículos)`);
-    console.log(`   • http://localhost:${PORT}/documentos (Documentos)`);
-    console.log(`   • http://localhost:${PORT}/documentos/simple (Documentos Simple)`);
-    console.log(`   • http://localhost:${PORT}/login (Login)`);
-    console.log(`   • http://localhost:${PORT}/tst-db (Test DB)`);
-    console.log(`   • http://localhost:${PORT}/api/vehiculos (API Vehículos)`);
-    console.log(`   • http://localhost:${PORT}/documentos/api/vehiculos (API Vehículos Docs)`);
+    console.log(`🚀 Servidor: http://localhost:${PORT}`);
     console.log('='.repeat(50));
 });
