@@ -233,12 +233,34 @@
                                                         <!-- Cargo -->
                                                         <div class="col-md-6 mb-3">
                                                             <label for="cargo" class="form-label">Cargo</label>
-                                                            <input type="text" class="form-control" id="cargo"
-                                                                name="cargo"
-                                                                value="<%= datosFormulario ? datosFormulario.cargo : '' %>"
-                                                                placeholder="Gerente, Supervisor, etc. (opcional)">
-                                                        </div>
+                                                            <select class="form-select" id="cargo" name="cargo">
+                                                                <option value="" <%=!datosFormulario ||
+                                                                    !datosFormulario.cargo ? 'selected' : '' %>
+                                                                    >Seleccione un cargo...</option>
 
+                                                                <% // Definimos la lista de cargos para iterar const
+                                                                    cargos=[ 'Gerente' , 'Supervisor' , 'Conductor'
+                                                                    , 'Administrativo' , 'Operaciones' , 'Logística'
+                                                                    , 'Mantenimiento' , 'Recursos Humanos'
+                                                                    , 'Prevencionista de Riesgos' , 'Vendedor'
+                                                                    , 'Contador' ]; %>
+
+                                                                    <% cargos.forEach(function(opcion) { %>
+                                                                        <option value="<%= opcion %>"
+                                                                            <%=(datosFormulario &&
+                                                                            datosFormulario.cargo===opcion) ? 'selected'
+                                                                            : '' %>>
+                                                                            <%= opcion %>
+                                                                        </option>
+                                                                        <% }); %>
+
+                                                                            <option value="Otro" <%=(datosFormulario &&
+                                                                                datosFormulario.cargo==='Otro' )
+                                                                                ? 'selected' : '' %>>Otro...</option>
+                                                            </select>
+                                                            <div class="form-text">Seleccione el cargo correspondiente
+                                                                al cliente/contacto.</div>
+                                                        </div>
                                                         <!-- Estado Activo -->
                                                         <div class="col-md-12 mb-3">
                                                             <div class="form-check">

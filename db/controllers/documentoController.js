@@ -1,18 +1,11 @@
 require('dotenv').config();
 const db = require('../conexion'); // Ya es una instancia, no necesita "new"
 
-/* ===============================
-   HELPERS
-================================ */
 const daysBetween = d => Math.ceil((new Date(d) - new Date()) / 86400000);
 const logError = (tag, err) => console.error(` ${tag}`, err.message || err);
 
-/* ===============================
-   CONTROLLER
-================================ */
-const documentosController = {
 
-    /* ---------- API VEHICULOS (PARA SELECT) ---------- */
+const documentosController = {
     apiVehiculos: async (req, res) => {
         try {
             const [vehiculos] = await db.execute(`
@@ -442,7 +435,7 @@ const documentosController = {
         }
     },
 
-    /* ---------- EDITAR DOCUMENTO ---------- */
+    
     editarDocumento: async (req, res) => {
         let conn;
         try {
@@ -508,7 +501,7 @@ const documentosController = {
         }
     },
 
-    /* ---------- ELIMINAR DOCUMENTO ---------- */
+    
     eliminarDocumento: async (req, res) => {
         try {
             const { id } = req.params;
@@ -526,7 +519,7 @@ const documentosController = {
         }
     },
 
-    /* ---------- LISTAR DOCUMENTOS POR VEHICULO ---------- */
+    
     listarDocumentosPorVehiculo: async (req, res) => {
         try {
             const [vehiculosConDocumentos] = await db.execute(`
@@ -557,7 +550,7 @@ const documentosController = {
         }
     },
 
-    /* ---------- DOCUMENTOS DE VEHICULO ESPECIFICO ---------- */
+    
     documentosPorVehiculo: async (req, res) => {
         try {
             const { id } = req.params;
@@ -606,13 +599,12 @@ const documentosController = {
         }
     },
 
-    /* ---------- ENVIAR RECORDATORIO ---------- */
+    
     enviarRecordatorio: async (req, res) => {
         try {
             const { id } = req.params;
 
-            // Aquí implementarías la lógica para enviar correo
-            // Por ahora solo simulamos el envío
+            
             console.log(`Enviando recordatorio para documento ID: ${id}`);
 
             res.redirect('/documentos?success=Recordatorio enviado exitosamente');
@@ -623,13 +615,10 @@ const documentosController = {
         }
     },
 
-    /* ---------- GENERAR REPORTE ---------- */
     generarReporte: async (req, res) => {
         try {
             const { tipo } = req.params;
 
-            // Aquí implementarías la lógica para generar PDF/Excel
-            // Por ahora solo simulamos la generación
             console.log(`Generando reporte tipo: ${tipo}`);
 
             res.redirect('/documentos?success=Reporte generado exitosamente');

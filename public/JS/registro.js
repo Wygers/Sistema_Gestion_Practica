@@ -1,4 +1,3 @@
-// archivo: public/js/registro.js
 document.getElementById('btnRegister').addEventListener('click', async function (e) {
     e.preventDefault();
 
