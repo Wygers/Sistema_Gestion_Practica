@@ -327,125 +327,121 @@
     <!-- Scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Convertir DV a mayúsculas automáticamente
+
+            function validarRUT(run, dv) {
+                run = run.replace(/\D/g, '');
+                dv = dv.toUpperCase();
+
+                let suma = 0;
+                let multiplo = 2;
+
+                for (let i = run.length - 1; i >= 0; i--) {
+                    suma += parseInt(run.charAt(i)) * multiplo;
+                    multiplo = multiplo < 7 ? multiplo + 1 : 2;
+                }
+
+                let resto = suma % 11;
+                let dvEsperado = 11 - resto;
+
+                if (dvEsperado === 11) dvEsperado = "0";
+                else if (dvEsperado === 10) dvEsperado = "K";
+                else dvEsperado = dvEsperado.toString();
+
+                return dv === dvEsperado;
+            }
+
             const dvInput = document.getElementById('dv');
+            const runInput = document.getElementById('run');
+
             if (dvInput) {
-                dvInput.addEventListener('input', function (e) {
+                dvInput.addEventListener('input', function () {
                     this.value = this.value.toUpperCase();
                 });
 
-                // También al perder el foco
-                dvInput.addEventListener('blur', function (e) {
+                dvInput.addEventListener('blur', function () {
                     this.value = this.value.toUpperCase();
                 });
             }
 
-            // Solo permitir números en RUN
-            const runInput = document.getElementById('run');
             if (runInput) {
-                runInput.addEventListener('input', function (e) {
+                runInput.addEventListener('input', function () {
                     this.value = this.value.replace(/\D/g, '');
                 });
             }
 
-            // Validación del formulario
             const form = document.getElementById('formAgregarPersona');
             const btnSubmit = document.getElementById('btnSubmit');
 
             if (form) {
                 form.addEventListener('submit', function (e) {
-                    // Deshabilitar botón para evitar doble envío
+
                     if (btnSubmit) {
                         btnSubmit.disabled = true;
                         btnSubmit.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Procesando...';
                     }
 
-                    const run = runInput ? runInput.value.trim() : '';
-                    const dv = dvInput ? dvInput.value.trim().toUpperCase() : '';
-                    const nombres = document.getElementById('nombres') ? document.getElementById('nombres').value.trim() : '';
-                    const apellidoPaterno = document.getElementById('apellido_paterno') ? document.getElementById('apellido_paterno').value.trim() : '';
-                    const clienteSelect = document.getElementById('id_cliente');
-                    const clienteId = clienteSelect ? clienteSelect.value : '';
+                    const run = runInput.value.trim();
+                    const dv = dvInput.value.trim().toUpperCase();
+                    const nombres = document.getElementById('nombres').value.trim();
+                    const apellidoPaterno = document.getElementById('apellido_paterno').value.trim();
+                    const clienteId = document.getElementById('id_cliente').value;
 
                     let errores = [];
 
-                    // Validar RUN (7-8 dígitos)
-                    if (!/^\d{7,8}$/.test(run)) {
-                        errores.push('El RUN debe tener exactamente 7 u 8 dígitos');
+                    if (!/^\d{7,8}$/.test(run)) errores.push('El RUN debe tener 7 u 8 dígitos');
+                    if (!/^[0-9K]$/.test(dv)) errores.push('DV inválido');
+
+                    if (!validarRUT(run, dv)) {
+                        errores.push('El RUT ingresado no es válido');
+
+                        runInput.classList.add('is-invalid');
+                        dvInput.classList.add('is-invalid');
+                    } else {
+                        runInput.classList.remove('is-invalid');
+                        dvInput.classList.remove('is-invalid');
                     }
 
-                    // Validar DV (0-9 o K)
-                    if (!/^[0-9K]$/.test(dv)) {
-                        errores.push('El DV debe ser un número (0-9) o la letra K');
-                    }
+                    if (nombres.length < 2) errores.push('Los nombres deben tener al menos 2 caracteres');
+                    if (apellidoPaterno.length < 2) errores.push('Apellido paterno muy corto');
 
-                    // Validar nombres
-                    if (nombres.length < 2) {
-                        errores.push('Los nombres deben tener al menos 2 caracteres');
-                    }
+                    if (!clienteId) errores.push('Debe seleccionar un cliente');
 
-                    // Validar apellido paterno
-                    if (apellidoPaterno.length < 2) {
-                        errores.push('El apellido paterno debe tener al menos 2 caracteres');
-                    }
-
-                    // Validar cliente
-                    if (!clienteId) {
-                        errores.push('Debe seleccionar un cliente');
-                    } else if (clienteId === '0') {
-                        // Si no hay clientes, mostrar advertencia pero permitir continuar
-                        if (!confirm('No hay clientes disponibles. ¿Desea continuar? El sistema creará un cliente automáticamente.')) {
-                            e.preventDefault();
-                            if (btnSubmit) {
-                                btnSubmit.disabled = false;
-                                btnSubmit.innerHTML = '<i class="bi bi-save me-2"></i>Guardar Persona';
-                            }
-                            return false;
-                        }
-                    }
-
-                    // Si hay errores, mostrar y cancelar envío
                     if (errores.length > 0) {
                         e.preventDefault();
-                        alert('Por favor corrija los siguientes errores:\n\n• ' + errores.join('\n• '));
 
-                        // Rehabilitar botón
-                        if (btnSubmit) {
-                            btnSubmit.disabled = false;
-                            btnSubmit.innerHTML = '<i class="bi bi-save me-2"></i>Guardar Persona';
-                        }
+                        alert('Corrija lo siguiente:\n\n• ' + errores.join('\n• '));
+
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = '<i class="bi bi-save me-2"></i>Guardar Persona';
+
+                        runInput.focus();
                         return false;
                     }
 
-                    // Si todo está bien, permitir envío
                     return true;
                 });
             }
 
-            // Auto-seleccionar si solo hay un cliente
             const clienteSelect = document.getElementById('id_cliente');
-            if (clienteSelect && clienteSelect.options.length === 2) {
-                clienteSelect.selectedIndex = 1;
-            }
+            if (clienteSelect && clienteSelect.options.length === 2) clienteSelect.selectedIndex = 1;
 
-            // Establecer fecha máxima para fecha de nacimiento (hoy)
             const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
             if (fechaNacimientoInput && !fechaNacimientoInput.value) {
                 const hoy = new Date();
-                const hace100Anios = new Date(hoy.getFullYear() - 100, hoy.getMonth(), hoy.getDate());
+                const hace100 = new Date(hoy.getFullYear() - 100, hoy.getMonth(), hoy.getDate());
                 fechaNacimientoInput.max = hoy.toISOString().split('T')[0];
-                fechaNacimientoInput.min = hace100Anios.toISOString().split('T')[0];
+                fechaNacimientoInput.min = hace100.toISOString().split('T')[0];
             }
 
-            // Mejorar UX: Focus en primer campo vacío
-            const camposObligatorios = ['id_cliente', 'run', 'dv', 'nombres', 'apellido_paterno'];
-            for (const campoId of camposObligatorios) {
-                const campo = document.getElementById(campoId);
+            const campos = ['id_cliente', 'run', 'dv', 'nombres', 'apellido_paterno'];
+            for (const id of campos) {
+                const campo = document.getElementById(id);
                 if (campo && !campo.value.trim()) {
                     campo.focus();
                     break;
                 }
             }
+
         });
     </script>
 </body>

@@ -57,7 +57,6 @@
             color: #444;
         }
 
-        /* Estilo para destacar el buscador de personas */
         .person-selector-box {
             background-color: #f8f0ff;
             border: 1px dashed var(--purple-custom);
@@ -65,8 +64,37 @@
             padding: 15px;
             margin-bottom: 20px;
         }
+
+        .persona-info-box {
+            background-color: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--purple-custom);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-purple-custom shadow-sm">
         <div class="container">
@@ -126,24 +154,75 @@
                                 </div>
                             </div>
 
+                            <!-- SECCIÓN MODIFICADA PARA BÚSQUEDA DE PERSONA -->
+                            <div class="form-section-title">Vincular Persona Existente</div>
                             <div class="person-selector-box">
-                                <label class="form-label fw-bold text-purple-custom"><i
-                                        class="bi bi-search me-1"></i>Vincular Persona Existente</label>
-                                <select class="form-select select2-enable" id="persona_vincular">
-                                    <option value="">-- Buscar por RUN o Nombre --</option>
-                                    <% if (typeof personas !=='undefined' ) { %>
-                                        <% personas.forEach(persona=> { %>
-                                            <option value="<%= persona.id_persona %>"
-                                                data-nombre="<%= persona.nombres %> <%= persona.apellido_paterno %> <%= persona.apellido_materno %>"
-                                                data-email="<%= persona.email %>">
-                                                <%= persona.run %>-<%= persona.dv %> | <%= persona.nombres %>
-                                                            <%= persona.apellido_paterno %>
-                                            </option>
-                                            <% }); %>
-                                                <% } %>
-                                </select>
-                                <div class="form-text">Selecciona una persona para autocompletar los datos de contacto
-                                    del grupo.</div>
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label for="buscar_persona" class="form-label fw-bold text-purple-custom">
+                                            <i class="bi bi-search me-1"></i>Buscar Persona por RUN o ID
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="bi bi-person-badge"></i></span>
+                                            <input type="text" class="form-control" id="buscar_persona"
+                                                placeholder="Ej: 12345678-9 o ID de persona">
+                                            <button type="button" class="btn btn-purple-custom"
+                                                onclick="buscarPersona()" id="btnBuscarPersona">
+                                                <i class="bi bi-search"></i> Buscar
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Ingresa el RUN (con guión) o el ID de la persona</div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label fw-bold text-purple-custom">O selecciona de la
+                                            lista</label>
+                                        <select class="form-select" id="persona_vincular_select">
+                                            <option value="">-- Seleccionar persona --</option>
+                                            <% if (typeof personas !=='undefined' ) { %>
+                                                <% personas.forEach(persona=> { %>
+                                                    <option value="<%= persona.id_persona %>"
+                                                        data-nombre="<%= persona.nombres %> <%= persona.apellido_paterno %> <%= persona.apellido_materno %>"
+                                                        data-email="<%= persona.email %>">
+                                                        <%= persona.run %>-<%= persona.dv %> | <%= persona.nombres %>
+                                                                    <%= persona.apellido_paterno %>
+                                                    </option>
+                                                    <% }); %>
+                                                        <% } %>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Información de la persona encontrada -->
+                                <div id="personaInfo" class="persona-info-box mt-3" style="display: none;">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-person-check text-success me-2"></i>Persona
+                                            encontrada</h6>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="limpiarPersona()">
+                                            <i class="bi bi-x"></i> Quitar
+                                        </button>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>ID Persona:</strong> <span id="infoIdPersona">-</span><br>
+                                            <strong>RUN:</strong> <span id="infoRun">-</span><br>
+                                            <strong>Nombre:</strong> <span id="infoNombre">-</span>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Email:</strong> <span id="infoEmail">-</span><br>
+                                            <strong>Teléfono:</strong> <span id="infoTelefono">-</span><br>
+                                            <strong>Dirección:</strong> <span id="infoDireccion">-</span>
+                                        </div>
+                                    </div>
+                                    <!-- Campo oculto para enviar el ID de la persona -->
+                                    <input type="hidden" id="id_persona_vincular" name="id_persona_vincular" value="">
+                                </div>
+
+                                <!-- Mensaje si no se encuentra la persona -->
+                                <div id="personaNoEncontrada" class="alert alert-warning mt-3" style="display: none;">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    No se encontró una persona con ese RUN o ID.
+                                </div>
                             </div>
 
                             <div class="form-section-title">Detalles de Contacto y Compañía</div>
@@ -193,10 +272,12 @@
                             </div>
 
                             <div class="d-flex justify-content-end gap-2 mt-5">
-                                <button type="reset" class="btn btn-light border"><i class="bi bi-eraser"></i>
-                                    Limpiar</button>
-                                <button type="submit" class="btn btn-purple-custom px-5"><i class="bi bi-save"></i>
-                                    Guardar Grupo</button>
+                                <button type="reset" class="btn btn-light border" onclick="limpiarTodo()">
+                                    <i class="bi bi-eraser"></i> Limpiar
+                                </button>
+                                <button type="submit" class="btn btn-purple-custom px-5">
+                                    <i class="bi bi-save"></i> Guardar Grupo
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -225,21 +306,140 @@
                 width: '100%'
             });
 
-            // LÓGICA DE AUTOCOMPLETADO AL SELECCIONAR PERSONA
-            $('#persona_vincular').on('change', function () {
+            // Autocompletar al seleccionar de la lista
+            $('#persona_vincular_select').on('change', function () {
                 const selectedOption = $(this).find(':selected');
                 const nombre = selectedOption.data('nombre');
                 const email = selectedOption.data('email');
+                const idPersona = $(this).val();
 
-                if (nombre) {
-                    $('#nombre_contacto').val(nombre);
-                    $('#email_contacto').val(email);
-                } else {
-                    $('#nombre_contacto').val('');
-                    $('#email_contacto').val('');
+                if (idPersona) {
+                    // Buscar información completa de la persona
+                    buscarPersonaPorId(idPersona);
+                }
+            });
+
+            // Permitir buscar con Enter
+            $('#buscar_persona').on('keypress', function (e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    buscarPersona();
                 }
             });
         });
+
+        function buscarPersona() {
+            const input = $('#buscar_persona').val().trim();
+            if (!input) {
+                alert('Por favor, ingresa un RUN o ID para buscar');
+                return;
+            }
+
+            // Mostrar loading
+            const btnBuscar = $('#btnBuscarPersona');
+            const originalHtml = btnBuscar.html();
+            btnBuscar.html('<span class="loading-spinner"></span> Buscando...');
+            btnBuscar.prop('disabled', true);
+
+            // Ocultar mensajes anteriores
+            $('#personaNoEncontrada').hide();
+            $('#personaInfo').hide();
+
+            // Determinar si es RUN o ID
+            let endpoint = '';
+            if (input.includes('-')) {
+                // Es un RUN (ej: 12345678-9)
+                endpoint = `/api/personas/buscar/run/${encodeURIComponent(input)}`;
+            } else if (!isNaN(input)) {
+                // Es un ID numérico
+                endpoint = `/api/personas/buscar/id/${input}`;
+            } else {
+                alert('Formato inválido. Ingresa un RUN (con guión) o un ID numérico');
+                btnBuscar.html(originalHtml);
+                btnBuscar.prop('disabled', false);
+                return;
+            }
+
+            // Hacer la petición AJAX
+            $.ajax({
+                url: endpoint,
+                method: 'GET',
+                dataType: 'json',
+                success: function (persona) {
+                    if (persona) {
+                        mostrarPersonaEncontrada(persona);
+                    } else {
+                        $('#personaNoEncontrada').show();
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error al buscar persona:', error);
+                    alert('Error al buscar persona. Por favor, intenta nuevamente.');
+                },
+                complete: function () {
+                    btnBuscar.html(originalHtml);
+                    btnBuscar.prop('disabled', false);
+                }
+            });
+        }
+
+        function buscarPersonaPorId(idPersona) {
+            if (!idPersona) return;
+
+            $.ajax({
+                url: `/api/personas/buscar/id/${idPersona}`,
+                method: 'GET',
+                dataType: 'json',
+                success: function (persona) {
+                    if (persona) {
+                        mostrarPersonaEncontrada(persona);
+                        // Seleccionar la opción en el select
+                        $('#persona_vincular_select').val(idPersona).trigger('change');
+                    }
+                },
+                error: function () {
+                    alert('Error al cargar información de la persona');
+                }
+            });
+        }
+
+        function mostrarPersonaEncontrada(persona) {
+            // Mostrar información
+            $('#infoIdPersona').text(persona.id_persona);
+            $('#infoRun').text(persona.run + '-' + persona.dv);
+            $('#infoNombre').text(persona.nombres + ' ' + persona.apellido_paterno + ' ' + persona.apellido_materno);
+            $('#infoEmail').text(persona.email || 'No registrado');
+            $('#infoTelefono').text(persona.telefono || 'No registrado');
+            $('#infoDireccion').text(persona.direccion || 'No registrada');
+
+            // Autocompletar campos del formulario
+            $('#nombre_contacto').val(persona.nombres + ' ' + persona.apellido_paterno + ' ' + persona.apellido_materno);
+            $('#email_contacto').val(persona.email || '');
+
+            // Guardar ID en campo oculto
+            $('#id_persona_vincular').val(persona.id_persona);
+
+            // Mostrar el contenedor de información
+            $('#personaInfo').show();
+            $('#personaNoEncontrada').hide();
+        }
+
+        function limpiarPersona() {
+            $('#buscar_persona').val('');
+            $('#persona_vincular_select').val('').trigger('change');
+            $('#personaInfo').hide();
+            $('#personaNoEncontrada').hide();
+            $('#id_persona_vincular').val('');
+
+            // Limpiar campos autocompletados (opcional)
+            // $('#nombre_contacto').val('');
+            // $('#email_contacto').val('');
+        }
+
+        function limpiarTodo() {
+            limpiarPersona();
+            // El resto del formulario se limpia con el botón reset nativo
+        }
     </script>
 </body>
 
