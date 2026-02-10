@@ -339,7 +339,6 @@
                     suma += parseInt(run.charAt(i)) * multiplo;
                     multiplo = multiplo < 7 ? multiplo + 1 : 2;
                 }
-
                 let resto = suma % 11;
                 let dvEsperado = 11 - resto;
 
@@ -349,7 +348,6 @@
 
                 return dv === dvEsperado;
             }
-
             const dvInput = document.getElementById('dv');
             const runInput = document.getElementById('run');
 
