@@ -17,9 +17,9 @@ class Conexion {
         // 🔎 Verificar conexión al iniciar la app
         this.pool.getConnection((err, connection) => {
             if (err) {
-                console.error('❌ Error al conectar a MySQL:', err.message);
+                console.error(' Error al conectar a MySQL:', err.message);
             } else {
-                console.log('✅ Conectado a MySQL correctamente');
+                console.log(' Conectado a MySQL correctamente');
                 connection.release();
             }
         });
@@ -29,7 +29,7 @@ class Conexion {
         return new Promise((resolve, reject) => {
             this.pool.execute(sql, valores, (error, resultados, fields) => {
                 if (error) {
-                    console.error('❌ Error en execute():', error.message);
+                    console.error(' Error en execute():', error.message);
                     return reject(error);
                 }
                 resolve([resultados, fields]);
@@ -41,7 +41,7 @@ class Conexion {
         return new Promise((resolve, reject) => {
             this.pool.query(sql, valores, (error, resultados, fields) => {
                 if (error) {
-                    console.error('❌ Error en query():', error.message);
+                    console.error(' Error en query():', error.message);
                     return reject(error);
                 }
                 resolve([resultados, fields]);
@@ -53,10 +53,10 @@ class Conexion {
         return new Promise((resolve, reject) => {
             this.pool.end(err => {
                 if (err) {
-                    console.error('❌ Error al cerrar MySQL:', err.message);
+                    console.error(' Error al cerrar MySQL:', err.message);
                     return reject(err);
                 }
-                console.log('🔌 Conexión MySQL cerrada');
+                console.log(' Conexión MySQL cerrada');
                 resolve();
             });
         });

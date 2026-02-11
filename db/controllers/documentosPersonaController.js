@@ -1,446 +1,407 @@
+// controllers/documentoPersona.controller.js
 const db = require('../conexion');
-const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises;
+const multer = require('multer');
 
-// Configuración de multer para subida de archivos
+// Configuración de Multer
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = 'uploads/documentos_personas/';
-        // Crear el directorio si no existe
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
+    destination: async function (req, file, cb) {
+        const uploadDir = path.join(__dirname, '../uploads/documentos_personas');
+        try {
+            await fs.mkdir(uploadDir, { recursive: true });
+            cb(null, uploadDir);
+        } catch (error) {
+            cb(error);
         }
-        cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const ext = path.extname(file.originalname);
-        cb(null, 'doc-' + uniqueSuffix + ext);
+        cb(null, `persona-${uniqueSuffix}${ext}`);
     }
 });
 
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-    if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Tipo de archivo no permitido. Solo PDF, JPG, PNG'), false);
-    }
-};
-
 const upload = multer({
     storage: storage,
-    fileFilter: fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Solo se permiten archivos PDF, JPG y PNG'), false);
+        }
+    },
+    limits: { fileSize: 10 * 1024 * 1024 }
 }).single('archivo_documento');
 
-// Obtener todos los tipos de documentos de un cliente
-exports.getTiposDocumentos = async (req, res) => {
-    try {
-        const id_cliente = req.session.id_cliente || 1; // Ajusta según tu sesión
-        const [tipos] = await db.query(
-            `SELECT id_tipo_documento, nombre_documento, descripcion, dias_alerta, obligatorio 
-             FROM tipo_documentos_persona 
-             WHERE id_cliente = ? AND activo = TRUE 
-             ORDER BY nombre_documento`,
-            [id_cliente]
-        );
-        res.json(tipos);
-    } catch (error) {
-        console.error('Error al obtener tipos de documentos:', error);
-        res.status(500).json({ error: 'Error al cargar tipos de documentos' });
-    }
-};
-
-// Buscar persona por identificación
-exports.buscarPersonaPorIdentificacion = async (req, res) => {
-    try {
-        const { identificacion } = req.params;
-        const id_cliente = req.session.id_cliente || 1;
-
-        const [personas] = await db.query(
-            `SELECT p.id_persona, p.nombres, p.apellidos, p.identificacion, p.correo, p.telefono,
-                    p.direccion, p.activo
-             FROM personas p
-             WHERE p.identificacion = ? AND p.id_cliente = ? AND p.activo = TRUE
-             LIMIT 1`,
-            [identificacion, id_cliente]
-        );
-
-        if (personas.length > 0) {
-            res.json({
-                success: true,
-                persona: personas[0]
-            });
-        } else {
-            res.json({
-                success: false,
-                message: 'No se encontró una persona con esa identificación'
-            });
-        }
-    } catch (error) {
-        console.error('Error al buscar persona por identificación:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al buscar persona'
-        });
-    }
-};
-
-// Obtener dashboard de documentos de personas
-exports.getDashboard = async (req, res) => {
-    try {
-        const id_cliente = req.session.id_cliente || 1;
-        const usuario_id = req.session.usuario_id || 1;
-
-        // Obtener tipos de documentos
-        const [tiposDocumentos] = await db.query(
-            `SELECT id_tipo_documento, nombre_documento, descripcion, dias_alerta 
-             FROM tipo_documentos_persona 
-             WHERE id_cliente = ? AND activo = TRUE`,
-            [id_cliente]
-        );
-
-        // Obtener personas con documentos
-        const [personas] = await db.query(
-            `SELECT DISTINCT p.id_persona, p.nombres, p.apellidos, p.identificacion
-             FROM personas p
-             INNER JOIN documentos_persona dp ON p.id_persona = dp.id_persona
-             WHERE p.id_cliente = ? AND p.activo = TRUE
-             ORDER BY p.nombres
-             LIMIT 20`,
-            [id_cliente]
-        );
-
-        // Obtener documentos recientes
-        const [documentos] = await db.query(
-            `SELECT dp.*, 
-                    p.nombres, p.apellidos, p.identificacion,
-                    td.nombre_documento as tipo_documento_nombre,
-                    td.dias_alerta as tipo_dias_alerta
-             FROM documentos_persona dp
-             INNER JOIN personas p ON dp.id_persona = p.id_persona
-             INNER JOIN tipo_documentos_persona td ON dp.id_tipo_documento = td.id_tipo_documento
-             WHERE p.id_cliente = ? AND dp.estado IN ('vigente', 'por_vencer')
-             ORDER BY dp.fecha_subida DESC
-             LIMIT 15`,
-            [id_cliente]
-        );
-
-        // Obtener documentos próximos a vencer (próximos 30 días)
-        const [documentosProximos] = await db.query(
-            `SELECT dp.*, 
-                    p.nombres, p.apellidos, p.identificacion,
-                    td.nombre_documento as tipo_documento_nombre
-             FROM documentos_persona dp
-             INNER JOIN personas p ON dp.id_persona = p.id_persona
-             INNER JOIN tipo_documentos_persona td ON dp.id_tipo_documento = td.id_tipo_documento
-             WHERE p.id_cliente = ? 
-               AND dp.fecha_vencimiento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-               AND dp.estado IN ('vigente', 'por_vencer')
-             ORDER BY dp.fecha_vencimiento ASC`,
-            [id_cliente]
-        );
-
-        // Contadores
-        const [total] = await db.query(
-            `SELECT COUNT(*) as total FROM documentos_persona dp
-             INNER JOIN personas p ON dp.id_persona = p.id_persona
-             WHERE p.id_cliente = ?`,
-            [id_cliente]
-        );
-
-        const [vigentes] = await db.query(
-            `SELECT COUNT(*) as total FROM documentos_persona dp
-             INNER JOIN personas p ON dp.id_persona = p.id_persona
-             WHERE p.id_cliente = ? AND dp.estado = 'vigente'`,
-            [id_cliente]
-        );
-
-        const [porVencer] = await db.query(
-            `SELECT COUNT(*) as total FROM documentos_persona dp
-             INNER JOIN personas p ON dp.id_persona = p.id_persona
-             WHERE p.id_cliente = ? AND dp.estado = 'por_vencer'`,
-            [id_cliente]
-        );
-
-        const [vencidos] = await db.query(
-            `SELECT COUNT(*) as total FROM documentos_persona dp
-             INNER JOIN personas p ON dp.id_persona = p.id_persona
-             WHERE p.id_cliente = ? AND dp.estado = 'vencido'`,
-            [id_cliente]
-        );
-
-        res.render('documentos_personas/index', {
-            title: 'Gestión de Documentos - Personas',
-            tiposDocumentos,
-            personas,
-            documentos,
-            documentosProximos,
-            totalDocumentos: total[0].total,
-            documentosVigentes: vigentes[0].total,
-            documentosPorVencer: porVencer[0].total,
-            documentosVencidos: vencidos[0].total,
-            fecha: new Date(),
-            success_msg: req.flash('success_msg'),
-            error_msg: req.flash('error_msg')
-        });
-
-    } catch (error) {
-        console.error('Error en dashboard:', error);
-        req.flash('error_msg', 'Error al cargar el dashboard');
-        res.redirect('/');
-    }
-};
-
-// Registrar nuevo documento de persona
-exports.registrarDocumento = async (req, res) => {
-    upload(req, res, async function (err) {
-        if (err) {
-            console.error('Error en upload:', err);
-            req.flash('error_msg', err.message || 'Error al subir el archivo');
-            return res.redirect('/documentos-personas');
-        }
-
-        const connection = await db.getConnection();
+const documentoPersonaController = {
+    // ============================================
+    // VISTA PRINCIPAL - CON TIPOS DE DOCUMENTO
+    // ============================================
+    index: async (req, res) => {
         try {
-            await connection.beginTransaction();
+            const idCliente = req.session?.usuario?.id_cliente || 1;
 
-            const {
-                id_persona,
-                id_tipo_documento,
-                numero_documento,
-                fecha_emision,
-                fecha_vencimiento,
-                observaciones,
-                dias_alerta
-            } = req.body;
+            // 1. Actualizar estados
+            await db.query(`
+                UPDATE documentos_persona dp
+                INNER JOIN tipo_documentos_persona tdp ON dp.id_tipo_documento = tdp.id_tipo_documento
+                INNER JOIN personas p ON dp.id_persona = p.id_persona
+                SET dp.estado = CASE
+                    WHEN dp.fecha_vencimiento < CURDATE() THEN 'vencido'
+                    WHEN dp.fecha_vencimiento <= DATE_ADD(CURDATE(), INTERVAL tdp.dias_alerta DAY) THEN 'por_vencer'
+                    ELSE 'vigente'
+                END
+                WHERE p.id_cliente = ?
+            `, [idCliente]);
 
-            const usuario_subida = req.session.usuario_id || 1;
+            // 2. Obtener documentos
+            const [documentos] = await db.query(`
+                SELECT 
+                    dp.*,
+                    p.run,
+                    p.dv,
+                    p.nombres,
+                    p.apellido_paterno,
+                    p.apellido_materno,
+                    p.email,
+                    CONCAT(p.run, '-', p.dv) as identificacion,
+                    CONCAT(p.nombres, ' ', p.apellido_paterno) as nombre_completo,
+                    tdp.nombre_documento as tipo_documento_nombre,
+                    tdp.dias_alerta,
+                    DATEDIFF(dp.fecha_vencimiento, CURDATE()) as dias_restantes
+                FROM documentos_persona dp
+                INNER JOIN personas p ON dp.id_persona = p.id_persona
+                INNER JOIN tipo_documentos_persona tdp ON dp.id_tipo_documento = tdp.id_tipo_documento
+                WHERE p.id_cliente = ? AND p.activo = true
+                ORDER BY dp.fecha_subida DESC
+            `, [idCliente]);
 
-            // Validaciones básicas
-            if (!id_persona || !id_tipo_documento || !numero_documento || !fecha_vencimiento) {
-                throw new Error('Todos los campos obligatorios deben estar completos');
+            // 3. Documentos próximos a vencer
+            const [proximos] = await db.query(`
+                SELECT 
+                    dp.*,
+                    p.run,
+                    p.dv,
+                    p.nombres,
+                    p.apellido_paterno,
+                    p.apellido_materno,
+                    CONCAT(p.run, '-', p.dv) as identificacion,
+                    tdp.nombre_documento as tipo_documento_nombre,
+                    DATEDIFF(dp.fecha_vencimiento, CURDATE()) as dias_restantes
+                FROM documentos_persona dp
+                INNER JOIN personas p ON dp.id_persona = p.id_persona
+                INNER JOIN tipo_documentos_persona tdp ON dp.id_tipo_documento = tdp.id_tipo_documento
+                WHERE p.id_cliente = ?
+                    AND dp.fecha_vencimiento BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+                    AND dp.estado != 'vencido'
+                    AND p.activo = true
+                ORDER BY dp.fecha_vencimiento ASC
+            `, [idCliente]);
+
+            // 4. Estadísticas
+            const [estadisticas] = await db.query(`
+                SELECT 
+                    COUNT(*) as total_documentos,
+                    SUM(CASE WHEN dp.estado = 'vigente' THEN 1 ELSE 0 END) as documentos_vigentes,
+                    SUM(CASE WHEN dp.estado = 'por_vencer' THEN 1 ELSE 0 END) as documentos_por_vencer,
+                    SUM(CASE WHEN dp.estado = 'vencido' THEN 1 ELSE 0 END) as documentos_vencidos
+                FROM documentos_persona dp
+                INNER JOIN personas p ON dp.id_persona = p.id_persona
+                WHERE p.id_cliente = ? AND p.activo = true
+            `, [idCliente]);
+
+            // 5. Personas activas
+            const [personas] = await db.query(`
+                SELECT 
+                    id_persona,
+                    run,
+                    dv,
+                    nombres,
+                    apellido_paterno,
+                    apellido_materno,
+                    CONCAT(run, '-', dv) as identificacion,
+                    email,
+                    telefono,
+                    cargo
+                FROM personas 
+                WHERE id_cliente = ? AND activo = true
+                ORDER BY apellido_paterno, nombres
+            `, [idCliente]);
+
+            // ===== 🔥 CRÍTICO: OBTENER TIPOS DE DOCUMENTO 🔥 =====
+            let [tiposDocumentos] = await db.query(`
+                SELECT 
+                    id_tipo_documento,
+                    nombre_documento,
+                    descripcion,
+                    dias_alerta,
+                    obligatorio
+                FROM tipo_documentos_persona
+                WHERE id_cliente = ? AND activo = true
+                ORDER BY nombre_documento
+            `, [idCliente]);
+
+            // ===== 🔥 RESPALDO: Si no hay tipos, usar array por defecto 🔥 =====
+            if (!tiposDocumentos || tiposDocumentos.length === 0) {
+                console.log('⚠️ No hay tipos de documento en BD, usando array por defecto');
+                tiposDocumentos = [
+                    { id_tipo_documento: 1, nombre_documento: 'Cédula de Identidad', descripcion: 'Documento nacional de identidad', dias_alerta: 60, obligatorio: true },
+                    { id_tipo_documento: 2, nombre_documento: 'Pasaporte', descripcion: 'Documento de viaje internacional', dias_alerta: 90, obligatorio: false },
+                    { id_tipo_documento: 3, nombre_documento: 'Licencia de Conducir', descripcion: 'Permiso para conducir vehículos', dias_alerta: 30, obligatorio: false },
+                    { id_tipo_documento: 4, nombre_documento: 'Certificado de Antecedentes', descripcion: 'Certificado de antecedentes penales', dias_alerta: 30, obligatorio: true },
+                    { id_tipo_documento: 5, nombre_documento: 'Título Profesional', descripcion: 'Título universitario o técnico', dias_alerta: 365, obligatorio: false },
+                    { id_tipo_documento: 6, nombre_documento: 'Certificado de Matrimonio', descripcion: 'Certificado de estado civil', dias_alerta: 365, obligatorio: false },
+                    { id_tipo_documento: 7, nombre_documento: 'Otros', descripcion: 'Otros tipos de documentos', dias_alerta: 30, obligatorio: false }
+                ];
             }
 
-            // Verificar que la persona existe
-            const [persona] = await connection.query(
-                'SELECT id_persona FROM personas WHERE id_persona = ? AND activo = TRUE',
-                [id_persona]
-            );
+            // Log para verificar
+            console.log(`✅ Tipos de documento cargados: ${tiposDocumentos.length}`);
 
-            if (persona.length === 0) {
-                throw new Error('La persona seleccionada no existe');
-            }
+            // ===== RENDERIZAR CON TODAS LAS VARIABLES =====
+            res.render('DocumentosPersonas', {
+                title: 'Gestión Documental - Personas',
+                currentRoute: '/documentos-personas',
+                documentos: documentos,
+                documentosProximos: proximos,
+                totalDocumentos: estadisticas[0]?.total_documentos || 0,
+                documentosVigentes: estadisticas[0]?.documentos_vigentes || 0,
+                documentosPorVencer: estadisticas[0]?.documentos_por_vencer || 0,
+                documentosVencidos: estadisticas[0]?.documentos_vencidos || 0,
+                personas: personas,
+                tiposDocumentos: tiposDocumentos, // ✅ VARIABLE CRÍTICA
+                success_msg: req.flash('success'),
+                error_msg: req.flash('error'),
+                success: req.flash('success'),
+                error: req.flash('error'),
+                formData: req.flash('formData')[0] || {},
+                usuario: req.session.usuario || null
+            });
+        } catch (error) {
+            console.error('❌ Error en index:', error);
+            req.flash('error', 'Error al cargar documentos');
+            res.redirect('/');
+        }
+    },
 
-            // Verificar que el tipo de documento existe
-            const [tipoDoc] = await connection.query(
-                'SELECT id_tipo_documento FROM tipo_documentos_persona WHERE id_tipo_documento = ? AND activo = TRUE',
-                [id_tipo_documento]
-            );
+    // ============================================
+    // REGISTRAR DOCUMENTO
+    // ============================================
+    registrar: async (req, res) => {
+        try {
+            upload(req, res, async function (err) {
+                if (err) {
+                    req.flash('error', err.message || 'Error al subir el archivo');
+                    req.flash('formData', req.body);
+                    return res.redirect('/documentos-personas');
+                }
 
-            if (tipoDoc.length === 0) {
-                throw new Error('El tipo de documento seleccionado no existe');
-            }
+                const idCliente = req.session?.usuario?.id_cliente || 1;
+                const usuarioId = req.session?.usuario?.id_usuario || null;
 
-            // Calcular estado automático
-            let estado = 'vigente';
-            const hoy = new Date();
-            const vencimiento = new Date(fecha_vencimiento);
-            const diffDays = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
-
-            if (diffDays < 0) {
-                estado = 'vencido';
-            } else if (diffDays <= (dias_alerta || 30)) {
-                estado = 'por_vencer';
-            }
-
-            // Preparar datos del archivo
-            let nombre_archivo = null;
-            let ruta_archivo = null;
-
-            if (req.file) {
-                nombre_archivo = req.file.originalname;
-                ruta_archivo = req.file.path;
-            }
-
-            // Insertar documento
-            const [result] = await connection.query(
-                `INSERT INTO documentos_persona 
-                 (id_persona, id_tipo_documento, nombre_archivo, ruta_archivo, 
-                  numero_documento, fecha_emision, fecha_vencimiento, estado, 
-                  observaciones, usuario_subida)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
+                const {
                     id_persona,
                     id_tipo_documento,
-                    nombre_archivo,
-                    ruta_archivo,
                     numero_documento,
+                    fecha_emision,
+                    fecha_vencimiento,
+                    observaciones
+                } = req.body;
+
+                // Validaciones
+                if (!id_persona || !id_tipo_documento || !fecha_vencimiento) {
+                    req.flash('error', 'Los campos obligatorios deben ser completados');
+                    req.flash('formData', req.body);
+                    return res.redirect('/documentos-personas');
+                }
+
+                // Verificar persona
+                const [persona] = await db.query(
+                    'SELECT * FROM personas WHERE id_persona = ? AND id_cliente = ? AND activo = true',
+                    [id_persona, idCliente]
+                );
+
+                if (persona.length === 0) {
+                    req.flash('error', 'La persona seleccionada no existe');
+                    req.flash('formData', req.body);
+                    return res.redirect('/documentos-personas');
+                }
+
+                // Obtener tipo de documento
+                const [tipoDoc] = await db.query(
+                    'SELECT nombre_documento, dias_alerta FROM tipo_documentos_persona WHERE id_tipo_documento = ? AND id_cliente = ?',
+                    [id_tipo_documento, idCliente]
+                );
+
+                // Calcular estado
+                const hoy = new Date();
+                const vencimiento = new Date(fecha_vencimiento);
+                const diasRestantes = Math.ceil((vencimiento - hoy) / (1000 * 60 * 60 * 24));
+                const diasAlerta = tipoDoc[0]?.dias_alerta || 30;
+
+                let estado = 'vigente';
+                if (diasRestantes <= 0) {
+                    estado = 'vencido';
+                } else if (diasRestantes <= diasAlerta) {
+                    estado = 'por_vencer';
+                }
+
+                // Insertar documento
+                await db.query(`
+                    INSERT INTO documentos_persona (
+                        id_persona, id_tipo_documento, nombre_archivo, ruta_archivo,
+                        numero_documento, fecha_emision, fecha_vencimiento, estado,
+                        observaciones, usuario_subida
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    id_persona,
+                    id_tipo_documento,
+                    req.file?.originalname || null,
+                    req.file?.path || null,
+                    numero_documento || null,
                     fecha_emision || null,
                     fecha_vencimiento,
                     estado,
                     observaciones || null,
-                    usuario_subida
-                ]
-            );
+                    usuarioId
+                ]);
 
-            await connection.commit();
-
-            req.flash('success_msg', 'Documento registrado exitosamente');
-            res.redirect('/documentos-personas');
-
+                req.flash('success', 'Documento registrado exitosamente');
+                res.redirect('/documentos-personas');
+            });
         } catch (error) {
-            await connection.rollback();
-            console.error('Error al registrar documento:', error);
+            console.error('❌ Error en registrar:', error);
+            req.flash('error', 'Error al registrar el documento');
+            req.flash('formData', req.body);
+            res.redirect('/documentos-personas');
+        }
+    },
 
-            // Eliminar archivo si se subió y hubo error
-            if (req.file) {
-                fs.unlink(req.file.path, (err) => {
-                    if (err) console.error('Error al eliminar archivo:', err);
-                });
+    // ============================================
+    // BUSCAR PERSONA POR RUN
+    // ============================================
+    buscarPersonaPorRun: async (req, res) => {
+        try {
+            const idCliente = req.session?.usuario?.id_cliente || 1;
+            const { run } = req.params;
+
+            const [persona] = await db.query(`
+                SELECT 
+                    id_persona, run, dv, nombres, apellido_paterno, apellido_materno,
+                    CONCAT(run, '-', dv) as identificacion_completa,
+                    email, telefono, cargo, activo
+                FROM personas 
+                WHERE id_cliente = ? AND activo = true
+                    AND (run = ? OR CONCAT(run, '-', dv) = ?)
+                LIMIT 1
+            `, [idCliente, run, run]);
+
+            if (persona.length > 0) {
+                res.json({ success: true, persona: persona[0] });
+            } else {
+                res.json({ success: false, message: 'Persona no encontrada' });
+            }
+        } catch (error) {
+            res.status(500).json({ success: false, message: 'Error al buscar persona' });
+        }
+    },
+
+    // ============================================
+    // DESCARGAR DOCUMENTO
+    // ============================================
+    descargar: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const idCliente = req.session?.usuario?.id_cliente || 1;
+
+            const [documento] = await db.query(`
+                SELECT dp.*, p.id_cliente 
+                FROM documentos_persona dp
+                INNER JOIN personas p ON dp.id_persona = p.id_persona
+                WHERE dp.id_documento = ? AND p.id_cliente = ?
+            `, [id, idCliente]);
+
+            if (documento.length === 0 || !documento[0].ruta_archivo) {
+                req.flash('error', 'Documento no encontrado');
+                return res.redirect('/documentos-personas');
             }
 
-            req.flash('error_msg', error.message || 'Error al registrar el documento');
-            res.redirect('/documentos-personas');
-        } finally {
-            connection.release();
-        }
-    });
-};
-
-// Obtener documentos de una persona específica
-exports.getDocumentosByPersona = async (req, res) => {
-    try {
-        const { id_persona } = req.params;
-        const id_cliente = req.session.id_cliente || 1;
-
-        const [documentos] = await db.query(
-            `SELECT dp.*, td.nombre_documento as tipo_documento_nombre
-             FROM documentos_persona dp
-             INNER JOIN tipo_documentos_persona td ON dp.id_tipo_documento = td.id_tipo_documento
-             INNER JOIN personas p ON dp.id_persona = p.id_persona
-             WHERE dp.id_persona = ? AND p.id_cliente = ?
-             ORDER BY dp.fecha_vencimiento DESC`,
-            [id_persona, id_cliente]
-        );
-
-        const [persona] = await db.query(
-            'SELECT nombres, apellidos, identificacion FROM personas WHERE id_persona = ?',
-            [id_persona]
-        );
-
-        res.json({
-            success: true,
-            documentos,
-            persona: persona[0] || null
-        });
-
-    } catch (error) {
-        console.error('Error al obtener documentos por persona:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error al cargar documentos'
-        });
-    }
-};
-
-// Actualizar estado de documentos (cron job o manual)
-exports.actualizarEstados = async (req, res) => {
-    try {
-        const hoy = new Date().toISOString().split('T')[0];
-
-        // Actualizar documentos vencidos
-        await db.query(
-            `UPDATE documentos_persona 
-             SET estado = 'vencido' 
-             WHERE fecha_vencimiento < ? AND estado != 'vencido'`,
-            [hoy]
-        );
-
-        // Actualizar documentos por vencer (próximos 30 días)
-        await db.query(
-            `UPDATE documentos_persona 
-             SET estado = 'por_vencer' 
-             WHERE fecha_vencimiento BETWEEN ? AND DATE_ADD(?, INTERVAL 30 DAY)
-               AND estado != 'vencido'`,
-            [hoy, hoy]
-        );
-
-        // Actualizar documentos vigentes
-        await db.query(
-            `UPDATE documentos_persona 
-             SET estado = 'vigente' 
-             WHERE fecha_vencimiento > DATE_ADD(?, INTERVAL 30 DAY)
-               AND estado != 'vigente'`,
-            [hoy]
-        );
-
-        req.flash('success_msg', 'Estados de documentos actualizados correctamente');
-        res.redirect('/documentos-personas');
-
-    } catch (error) {
-        console.error('Error al actualizar estados:', error);
-        req.flash('error_msg', 'Error al actualizar estados');
-        res.redirect('/documentos-personas');
-    }
-};
-
-// Registrar nuevo tipo de documento para personas
-exports.registrarTipoDocumento = async (req, res) => {
-    try {
-        const { nombre, descripcion, dias_alerta, obligatorio } = req.body;
-        const id_cliente = req.session.id_cliente || 1;
-
-        if (!nombre) {
-            req.flash('error_msg', 'El nombre del tipo de documento es obligatorio');
-            return res.redirect('/documentos-personas');
-        }
-
-        await db.query(
-            `INSERT INTO tipo_documentos_persona 
-             (id_cliente, nombre_documento, descripcion, dias_alerta, obligatorio) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [id_cliente, nombre, descripcion || null, dias_alerta || 30, obligatorio ? 1 : 0]
-        );
-
-        req.flash('success_msg', 'Tipo de documento registrado exitosamente');
-        res.redirect('/documentos-personas');
-
-    } catch (error) {
-        console.error('Error al registrar tipo de documento:', error);
-        req.flash('error_msg', 'Error al registrar el tipo de documento');
-        res.redirect('/documentos-personas');
-    }
-};
-
-// Descargar archivo de documento
-exports.descargarDocumento = async (req, res) => {
-    try {
-        const { id_documento } = req.params;
-
-        const [documento] = await db.query(
-            'SELECT ruta_archivo, nombre_archivo FROM documentos_persona WHERE id_documento = ?',
-            [id_documento]
-        );
-
-        if (documento.length === 0 || !documento[0].ruta_archivo) {
-            req.flash('error_msg', 'Documento no encontrado o sin archivo');
-            return res.redirect('/documentos-personas');
-        }
-
-        const filePath = documento[0].ruta_archivo;
-        if (fs.existsSync(filePath)) {
-            res.download(filePath, documento[0].nombre_archivo || 'documento.pdf');
-        } else {
-            req.flash('error_msg', 'Archivo no encontrado en el servidor');
+            try {
+                await fs.access(documento[0].ruta_archivo);
+                res.download(documento[0].ruta_archivo, documento[0].nombre_archivo);
+            } catch {
+                req.flash('error', 'El archivo no existe en el servidor');
+                res.redirect('/documentos-personas');
+            }
+        } catch (error) {
+            req.flash('error', 'Error al descargar el documento');
             res.redirect('/documentos-personas');
         }
+    },
 
-    } catch (error) {
-        console.error('Error al descargar documento:', error);
-        req.flash('error_msg', 'Error al descargar el archivo');
-        res.redirect('/documentos-personas');
+    // ============================================
+    // ELIMINAR DOCUMENTO
+    // ============================================
+    eliminar: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const idCliente = req.session?.usuario?.id_cliente || 1;
+
+            const [documento] = await db.query(`
+                SELECT dp.*, p.id_cliente 
+                FROM documentos_persona dp
+                INNER JOIN personas p ON dp.id_persona = p.id_persona
+                WHERE dp.id_documento = ? AND p.id_cliente = ?
+            `, [id, idCliente]);
+
+            if (documento.length === 0) {
+                req.flash('error', 'Documento no encontrado');
+                return res.redirect('/documentos-personas');
+            }
+
+            if (documento[0].ruta_archivo) {
+                try { await fs.unlink(documento[0].ruta_archivo); } catch (e) { }
+            }
+
+            await db.query('DELETE FROM documentos_persona WHERE id_documento = ?', [id]);
+            req.flash('success', 'Documento eliminado exitosamente');
+            res.redirect('/documentos-personas');
+        } catch (error) {
+            req.flash('error', 'Error al eliminar el documento');
+            res.redirect('/documentos-personas');
+        }
+    },
+
+    // ============================================
+    // CREAR TIPO DE DOCUMENTO
+    // ============================================
+    crearTipoDocumento: async (req, res) => {
+        try {
+            const idCliente = req.session?.usuario?.id_cliente || 1;
+            const { nombre, descripcion, dias_alerta, obligatorio } = req.body;
+
+            if (!nombre) {
+                req.flash('error', 'El nombre del tipo de documento es obligatorio');
+                return res.redirect('/documentos-personas');
+            }
+
+            await db.query(`
+                INSERT INTO tipo_documentos_persona 
+                (id_cliente, nombre_documento, descripcion, dias_alerta, obligatorio) 
+                VALUES (?, ?, ?, ?, ?)
+            `, [idCliente, nombre, descripcion || null, dias_alerta || 30, obligatorio === 'on']);
+
+            req.flash('success', 'Tipo de documento creado exitosamente');
+            res.redirect('/documentos-personas');
+        } catch (error) {
+            req.flash('error', error.code === 'ER_DUP_ENTRY' ?
+                'Ya existe un tipo de documento con ese nombre' :
+                'Error al crear el tipo de documento');
+            res.redirect('/documentos-personas');
+        }
     }
 };
+
+module.exports = documentoPersonaController;

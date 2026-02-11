@@ -47,9 +47,9 @@ const cargarRutas = (nombre, ruta, pathArchivo) => {
     try {
         const router = require(pathArchivo);
         app.use(ruta, router);
-        console.log(`✅ Rutas de ${nombre} cargadas en ${ruta}`);
+        console.log(` Rutas de ${nombre} cargadas en ${ruta}`);
     } catch (error) {
-        console.error(`❌ Error al cargar rutas de ${nombre}:`, error.message);
+        console.error(` Error al cargar rutas de ${nombre}:`, error.message);
     }
 };
 
@@ -141,6 +141,6 @@ app.use((req, res) => {
 // Iniciar servidor
 app.listen(PORT, () => {
     console.log('='.repeat(50));
-    console.log(`🚀 Servidor: http://localhost:${PORT}`);
+    console.log(` Servidor: http://localhost:${PORT}`);
     console.log('='.repeat(50));
 });
