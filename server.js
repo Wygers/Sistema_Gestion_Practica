@@ -70,6 +70,16 @@ app.get('/', async (req, res) => {
     }
 });
 
+// En tu archivo de rutas (ej. server.js o documentos.routes.js)
+app.get('/documentos-personas', async (req, res) => {
+    // ... tu lógica existente
+    res.render('DocumentosPersonas', {
+        title: 'Gestión Documental - Personas',
+        currentRoute: '/documentos-personas', // ← Agrega esto
+        // ... tus otras variables
+    });
+});
+
 // GET: Formulario Agregar Grupo
 app.get('/grupos/crear', async (req, res) => {
     try {

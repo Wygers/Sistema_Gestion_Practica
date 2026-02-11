@@ -18,7 +18,6 @@
     <!-- CSS -->
     <link rel="stylesheet" href="/css/Index.css">
 </head>
-
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary-custom shadow-sm">
@@ -36,6 +35,8 @@
                     <li class="nav-item">
                         <a class="nav-link active" href="/">Inicio</a>
                     </li>
+
+                    <!-- Dropdown Personas -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownPersonas" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
@@ -53,7 +54,8 @@
                                 </a></li>
                         </ul>
                     </li>
-                    <!-- Nuevo: Dropdown para Vehículos -->
+
+                    <!-- Dropdown Vehículos -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownVehiculos" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
@@ -68,13 +70,15 @@
                                 </a></li>
                         </ul>
                     </li>
+
+                    <!-- Dropdown Grupos -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownGrupos" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-people-fill me-1"></i>Grupos
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdownGrupos">
-                          <li>
+                            <li>
                                 <a class="dropdown-item" href="/grupos/crear">
                                     <i class="bi bi-plus-circle me-2"></i>Crear Grupo
                                 </a>
@@ -87,22 +91,56 @@
                         </ul>
                     </li>
 
-                    <li class="nav-item">
-                        <a class="nav-link" href="/documentos">Documentos</a>
+                    <!-- Dropdown Documentos (Unificado con submenús) -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownDocumentos" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-file-earmark-text me-1"></i>Documentos
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdownDocumentos">
+                            <!-- Documentos Vehiculares -->
+                            <li>
+                                <h6 class="dropdown-header"><i class="bi bi-truck me-2"></i>Documentos Vehiculares</h6>
+                            </li>
+                            <li><a class="dropdown-item" href="/documentos">
+                                    <i class="bi bi-files me-2"></i>Gestión de Documentos
+                                </a></li>
+                            <li><a class="dropdown-item" href="/documentos/vehiculos">
+                                    <i class="bi bi-list-ul me-2"></i>Ver Todos
+                                </a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+
+                            <!-- Documentos de Personas -->
+                            <li>
+                                <h6 class="dropdown-header"><i class="bi bi-people me-2"></i>Documentos de Personas</h6>
+                            </li>
+                            <li><a class="dropdown-item" href="/documentos-personas">
+                                    <i class="bi bi-file-earmark-person me-2"></i>Gestión de Documentos
+                                </a></li>
+                            <li><a class="dropdown-item" href="/documentos-personas"
+                                    onclick="document.getElementById('modalNuevoDocumentoPersonaBtn').click(); return false;">
+                                    <i class="bi bi-plus-circle me-2"></i>Nuevo Documento
+                                </a></li>
+                        </ul>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="/reportes">Reportes</a>
+                        <a class="nav-link" href="/reportes">
+                            <i class="bi bi-graph-up me-1"></i>Reportes
+                        </a>
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link" href="/login">Login</a>
+                        <a class="nav-link" href="/login">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                        </a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
-
     <!-- Main -->
     <main class="container mt-4">
         <h1 class="text-center text-primary-custom">
