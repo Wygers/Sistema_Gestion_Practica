@@ -118,7 +118,7 @@ CREATE TABLE vehiculos (
     UNIQUE KEY idx_patente_cliente (id_cliente, patente)
 );
 
-CREATE TABLE tipo_documentos_vehiculo (
+CREATE TABLE tipos_documento_veh (
     id_tipo_documento_veh INT AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT NOT NULL,
     nombre_documento VARCHAR(100) NOT NULL,
@@ -146,7 +146,7 @@ CREATE TABLE documentos_vehiculo (
     usuario_subida INT,
     fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (id_vehiculo) REFERENCES vehiculos(id_vehiculo),
-    FOREIGN KEY (id_tipo_documento_veh) REFERENCES tipo_documentos_vehiculo(id_tipo_documento_veh),
+    FOREIGN KEY (id_tipo_documento_veh) REFERENCES tipos_documento_veh(id_tipo_documento_veh),
     FOREIGN KEY (usuario_subida) REFERENCES usuarios(id_usuario)
 );
 

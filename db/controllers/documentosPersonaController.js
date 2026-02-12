@@ -143,9 +143,9 @@ const documentoPersonaController = {
                 ORDER BY nombre_documento
             `, [idCliente]);
 
-            // ===== 🔥 RESPALDO: Si no hay tipos, usar array por defecto 🔥 =====
+            // =====  RESPALDO: Si no hay tipos, usar array por defecto  =====
             if (!tiposDocumentos || tiposDocumentos.length === 0) {
-                console.log('⚠️ No hay tipos de documento en BD, usando array por defecto');
+                console.log(' No hay tipos de documento en BD, usando array por defecto');
                 tiposDocumentos = [
                     { id_tipo_documento: 1, nombre_documento: 'Cédula de Identidad', descripcion: 'Documento nacional de identidad', dias_alerta: 60, obligatorio: true },
                     { id_tipo_documento: 2, nombre_documento: 'Pasaporte', descripcion: 'Documento de viaje internacional', dias_alerta: 90, obligatorio: false },
