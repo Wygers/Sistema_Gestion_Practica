@@ -1,7 +1,6 @@
 -- Base de datos para Gestión de Personas y Vehículos con Sistema de Alertas
-CREATE DATABASE IF NOT EXISTS gestion_documentos;
-USE gestion_documentos;
-
+CREATE DATABASE IF NOT EXISTS sistema_gpv;
+USE sistema_gpv;
 
 CREATE TABLE clientes (
     id_cliente INT AUTO_INCREMENT PRIMARY KEY,
