@@ -54,41 +54,23 @@ router.get('/api/vehiculo/:id', documentosController.buscarVehiculoPorID);
 router.get('/api/tipos', documentosController.apiTipos);
 router.get('/api/documento/:id', documentosController.obtenerDetalle);
 router.get('/api/verificar-vehiculo/:id', documentosController.verificarVehiculo);
-
-
-
 router.get('/reporte/:id', documentosController.generarReporte);
-
-
-
 router.get('/', documentosController.mostrarDocumentos);
 router.get('/vehiculos', documentosController.listarDocumentosPorVehiculo);
-
-
 router.get('/vehiculo/:id', documentosController.documentosPorVehiculo);
-
-
-
 router.post(
     '/vehiculo/registrar',
     upload.single('archivo_documento'),
     documentosController.agregarDocumento
 );
-
 router.post('/tipos/nuevo', documentosController.crearTipoDocumento);
-
 router.post(
     '/editar/:id',
     upload.single('archivo_documento'),
     documentosController.editarDocumento
 );
-
 router.post('/eliminar/:id', documentosController.eliminarDocumento);
-
 router.post('/recordatorio/:id', documentosController.enviarRecordatorio);
-
-
-
 router.use((err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
@@ -108,5 +90,4 @@ router.use((err, req, res, next) => {
 router.use((req, res) => {
     res.status(404).redirect('/documentos?error=Ruta no encontrada');
 });
-
 module.exports = router;

@@ -46,7 +46,6 @@ const documentosController = {
         }
     },
 
-    
     buscarVehiculoPorID: async (req, res) => {
         try {
             const { id } = req.params;
@@ -91,7 +90,6 @@ const documentosController = {
         }
     },
 
-    
     buscarVehiculoPorPatente: async (req, res) => {
         try {
             const { patente } = req.params;
@@ -136,7 +134,6 @@ const documentosController = {
         }
     },
 
-    
     verificarVehiculo: async (req, res) => {
         try {
             const { id } = req.params;
@@ -173,13 +170,13 @@ const documentosController = {
             });
         }
     },
-    
+
     apiTipos: async (req, res) => {
         try {
             const [tipos] = await db.execute(`
                 SELECT * FROM tipos_documento_veh 
                 WHERE activo = 1
-                ORDER BY nombre_documento  /* CAMBIADO: nombre → nombre_documento */
+                ORDER BY nombre_documento
             `);
 
             res.json({
@@ -196,7 +193,6 @@ const documentosController = {
         }
     },
 
-    
     mostrarDocumentos: async (req, res) => {
         try {
             // 1. Obtener vehículos para el modal
@@ -219,18 +215,18 @@ const documentosController = {
             const [tiposDocumentos] = await db.execute(`
                 SELECT * FROM tipos_documento_veh 
                 WHERE activo = 1
-                ORDER BY nombre_documento  /* CAMBIADO: nombre → nombre_documento */
+                ORDER BY nombre_documento
             `);
 
-            
+            // 3. Obtener documentos con JOIN
             const [documentos] = await db.execute(`
                 SELECT 
                     dv.*,
                     v.patente,
                     v.marca,
                     v.modelo,
-                    td.nombre_documento as tipo_documento  /* CAMBIADO: nombre → nombre_documento */
-                FROM documentos_vehiculo dv  /* CAMBIADO: documentos_vehiculares → documentos_vehiculo */
+                    td.nombre_documento as tipo_documento
+                FROM documentos_vehiculo dv
                 LEFT JOIN vehiculos v ON dv.id_vehiculo = v.id_vehiculo
                 LEFT JOIN tipos_documento_veh td ON dv.id_tipo_documento_veh = td.id_tipo_documento_veh
                 ORDER BY dv.fecha_vencimiento DESC
@@ -271,7 +267,7 @@ const documentosController = {
 
         } catch (err) {
             logError('MOSTRAR DOCUMENTOS', err);
-            console.error('Error detallado:', err); // Para ver más detalles
+            console.error('Error detallado:', err);
 
             res.render('documentos', {
                 title: 'Gestión Documental',
@@ -289,25 +285,19 @@ const documentosController = {
         }
     },
 
-    
     agregarDocumento: async (req, res) => {
         let conn;
         try {
-            // Necesitamos una conexión para transacción
             conn = await db.pool.promise().getConnection();
-
             await conn.beginTransaction();
 
-            // Obtener id_vehiculo del campo correcto según la selección
             const id_vehiculo = req.body.id_vehiculo || req.body.id_vehiculo_final;
             const {
                 id_tipo_documento_veh,
                 numero_documento,
                 fecha_emision,
                 fecha_vencimiento,
-                dias_alerta = 30,
-                observaciones,
-                enviar_alerta = 'on'
+                observaciones
             } = req.body;
 
             // Validaciones básicas
@@ -315,7 +305,6 @@ const documentosController = {
                 return res.redirect('/documentos?error=Faltan campos obligatorios');
             }
 
-            
             const [[vehiculoExiste]] = await conn.execute(
                 'SELECT id_vehiculo FROM vehiculos WHERE id_vehiculo = ? AND activo = 1',
                 [id_vehiculo]
@@ -326,9 +315,9 @@ const documentosController = {
             }
 
             // Procesar archivo si existe
+            const nombre_archivo = req.file ? req.file.filename : null;
             const ruta_archivo = req.file ? `/uploads/documentos/${req.file.filename}` : null;
 
-            
             await conn.execute(`
                 INSERT INTO documentos_vehiculo (
                     id_vehiculo,
@@ -336,23 +325,21 @@ const documentosController = {
                     numero_documento,
                     fecha_emision,
                     fecha_vencimiento,
-                    dias_alerta,
+                    nombre_archivo,
                     ruta_archivo,
                     observaciones,
-                    enviar_alerta,
-                    fecha_subida,  /* CAMBIADO: fecha_registro → fecha_subida */
+                    fecha_subida,
                     estado
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'vigente')
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'vigente')
             `, [
                 id_vehiculo,
                 id_tipo_documento_veh,
                 numero_documento.trim(),
                 fecha_emision || null,
                 fecha_vencimiento,
-                parseInt(dias_alerta) || 30,
+                nombre_archivo,
                 ruta_archivo,
-                observaciones || null,
-                enviar_alerta === 'on' ? 1 : 0
+                observaciones || null
             ]);
 
             await conn.commit();
@@ -375,7 +362,6 @@ const documentosController = {
         }
     },
 
-    
     obtenerDetalle: async (req, res) => {
         try {
             const { id } = req.params;
@@ -387,9 +373,9 @@ const documentosController = {
                     v.marca,
                     v.modelo,
                     v.color,
-                    td.nombre_documento as tipo_documento,  /* CAMBIADO: nombre → nombre_documento */
+                    td.nombre_documento as tipo_documento,
                     td.descripcion
-                FROM documentos_vehiculo dv  /* CAMBIADO: documentos_vehiculares → documentos_vehiculo */
+                FROM documentos_vehiculo dv
                 LEFT JOIN vehiculos v ON dv.id_vehiculo = v.id_vehiculo
                 LEFT JOIN tipos_documento_veh td ON dv.id_tipo_documento_veh = td.id_tipo_documento_veh
                 WHERE dv.id_documento_veh = ?
@@ -413,19 +399,18 @@ const documentosController = {
         }
     },
 
-    
     crearTipoDocumento: async (req, res) => {
         try {
-            const { nombre_documento, descripcion, dias_alerta } = req.body;  // CAMBIADO: nombre → nombre_documento
+            const { nombre_documento, descripcion } = req.body;
 
             if (!nombre_documento) {
                 return res.redirect('/documentos?error=El nombre del tipo es obligatorio');
             }
 
             await db.execute(`
-                INSERT INTO tipos_documento_veh (nombre_documento, descripcion, dias_alerta, activo)  /* CAMBIADO: nombre → nombre_documento */
-                VALUES (?, ?, ?, 1)
-            `, [nombre_documento, descripcion || null, dias_alerta || 30]);
+                INSERT INTO tipos_documento_veh (nombre_documento, descripcion, activo)
+                VALUES (?, ?, 1)
+            `, [nombre_documento, descripcion || null]);
 
             res.redirect('/documentos?success=Tipo de documento creado exitosamente');
 
@@ -435,7 +420,6 @@ const documentosController = {
         }
     },
 
-    
     editarDocumento: async (req, res) => {
         let conn;
         try {
@@ -446,35 +430,31 @@ const documentosController = {
                 numero_documento,
                 fecha_emision,
                 fecha_vencimiento,
-                dias_alerta,
-                observaciones,
-                enviar_alerta
+                observaciones
             } = req.body;
-
-            // Procesar archivo si existe
-            let ruta_archivo = null;
-            if (req.file) {
-                ruta_archivo = `/uploads/documentos/${req.file.filename}`;
-                // Si hay un archivo nuevo, actualizamos la ruta
-                await db.execute(
-                    'UPDATE documentos_vehiculo SET ruta_archivo = ? WHERE id_documento_veh = ?',  // CORREGIDO
-                    [ruta_archivo, id]
-                );
-            }
 
             conn = await db.pool.promise().getConnection();
             await conn.beginTransaction();
 
+            // Procesar archivo si existe
+            if (req.file) {
+                const nombre_archivo = req.file.filename;
+                const ruta_archivo = `/uploads/documentos/${req.file.filename}`;
+
+                await conn.execute(
+                    'UPDATE documentos_vehiculo SET nombre_archivo = ?, ruta_archivo = ? WHERE id_documento_veh = ?',
+                    [nombre_archivo, ruta_archivo, id]
+                );
+            }
+
             await conn.execute(`
-                UPDATE documentos_vehiculo   /* CORREGIDO */
+                UPDATE documentos_vehiculo 
                 SET id_vehiculo = ?,
                     id_tipo_documento_veh = ?,
                     numero_documento = ?,
                     fecha_emision = ?,
                     fecha_vencimiento = ?,
-                    dias_alerta = ?,
                     observaciones = ?,
-                    enviar_alerta = ?,
                     fecha_actualizacion = NOW()
                 WHERE id_documento_veh = ?
             `, [
@@ -483,9 +463,7 @@ const documentosController = {
                 numero_documento.trim(),
                 fecha_emision || null,
                 fecha_vencimiento,
-                parseInt(dias_alerta) || 30,
                 observaciones || null,
-                enviar_alerta === 'on' ? 1 : 0,
                 id
             ]);
 
@@ -501,13 +479,12 @@ const documentosController = {
         }
     },
 
-    
     eliminarDocumento: async (req, res) => {
         try {
             const { id } = req.params;
 
             await db.execute(
-                'DELETE FROM documentos_vehiculo WHERE id_documento_veh = ?',  // CORREGIDO
+                'DELETE FROM documentos_vehiculo WHERE id_documento_veh = ?',
                 [id]
             );
 
@@ -519,7 +496,6 @@ const documentosController = {
         }
     },
 
-    
     listarDocumentosPorVehiculo: async (req, res) => {
         try {
             const [vehiculosConDocumentos] = await db.execute(`
@@ -532,7 +508,7 @@ const documentosController = {
                     SUM(CASE WHEN dv.fecha_vencimiento > NOW() THEN 1 ELSE 0 END) as vigentes,
                     SUM(CASE WHEN dv.fecha_vencimiento < NOW() THEN 1 ELSE 0 END) as vencidos
                 FROM vehiculos v
-                LEFT JOIN documentos_vehiculo dv ON v.id_vehiculo = dv.id_vehiculo  /* CORREGIDO */
+                LEFT JOIN documentos_vehiculo dv ON v.id_vehiculo = dv.id_vehiculo
                 WHERE v.activo = 1
                 GROUP BY v.id_vehiculo, v.patente, v.marca, v.modelo
                 ORDER BY v.patente
@@ -550,7 +526,6 @@ const documentosController = {
         }
     },
 
-    
     documentosPorVehiculo: async (req, res) => {
         try {
             const { id } = req.params;
@@ -566,8 +541,8 @@ const documentosController = {
             const [documentos] = await db.execute(`
                 SELECT 
                     dv.*,
-                    td.nombre_documento as tipo_documento  /* CAMBIADO: nombre → nombre_documento */
-                FROM documentos_vehiculo dv  /* CORREGIDO */
+                    td.nombre_documento as tipo_documento
+                FROM documentos_vehiculo dv
                 LEFT JOIN tipos_documento_veh td ON dv.id_tipo_documento_veh = td.id_tipo_documento_veh
                 WHERE dv.id_vehiculo = ?
                 ORDER BY dv.fecha_vencimiento
@@ -599,11 +574,9 @@ const documentosController = {
         }
     },
 
-    
     enviarRecordatorio: async (req, res) => {
         try {
             const { id } = req.params;
-
             console.log(`Enviando recordatorio para documento ID: ${id}`);
             res.redirect('/documentos?success=Recordatorio enviado exitosamente');
 

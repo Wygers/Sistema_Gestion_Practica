@@ -361,7 +361,6 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
             <% } %>
-
                 <% if (error_msg && error_msg.length> 0) { %>
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="bi bi-exclamation-triangle me-2"></i>
@@ -892,16 +891,6 @@
                                 <div class="form-text">Fecha límite de validez del documento</div>
                             </div>
                         </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="dias_alerta" class="form-label">Días para Alerta</label>
-                                <input type="number" class="form-control" id="dias_alerta" name="dias_alerta" value="30"
-                                    min="1" max="365">
-                                <div class="form-text">Días antes del vencimiento para enviar alerta</div>
-                            </div>
-                        </div>
-
                         <!-- Área de subida de archivo -->
                         <div class="mb-3">
                             <label class="form-label">Archivo Digital (Opcional)</label>

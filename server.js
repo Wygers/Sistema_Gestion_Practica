@@ -41,8 +41,7 @@ app.use((req, res, next) => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// --- 2. CARGA DE RUTAS EXTERNAS ---
-// Asegúrate de que estos archivos existan en la carpeta /routes
+
 const cargarRutas = (nombre, ruta, pathArchivo) => {
     try {
         const router = require(pathArchivo);
@@ -69,7 +68,22 @@ app.get('/', async (req, res) => {
         res.render('Home', { title: 'Inicio', fecha: new Date() });
     }
 });
-
+// Ruta para mostrar la página de login/registro
+app.get('/login', async (req, res) => {
+    try {
+        
+        res.render('Login', { 
+            title: 'Iniciar Sesión | Registrarse',
+            messages: req.flash ? req.flash() : {} // Si usas connect-flash
+        });
+    } catch (error) {
+        console.error('Error al cargar la página de login:', error);
+        res.render('LoginRegister', { 
+            title: 'Iniciar Sesión | Registrarse',
+            messages: { error: 'Error al cargar la página' }
+        });
+    }
+});
 // En tu archivo de rutas (ej. server.js o documentos.routes.js)
 app.get('/documentos-personas', async (req, res) => {
     // ... tu lógica existente
